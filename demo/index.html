@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tooling Interactive Customised Product Experience</title>
+  <link rel="stylesheet" href="css/demo.css">
+</head>
+<body>
+  <div class="viewport">
+    <main class="stage" id="stage" aria-live="polite">
+
+      <!-- Slide 1: title -->
+      <section class="slide slide-title is-active" id="slide-title" aria-label="Title">
+        <div class="media" data-slot="title_bg"></div>
+        <div class="tint tint-title"></div>
+        <img class="logo" src="assets/img/ti-logo.png" alt="Tooling Intelligence, Inventory Management Solutions">
+        <h1 class="title">Tooling Interactive Customised<br>Product Experience</h1>
+        <button class="btn btn-start" id="btn-start" type="button">Start</button>
+      </section>
+
+      <!-- Slide 2: user ID -->
+      <section class="slide slide-userid" id="slide-userid" aria-label="Enter your user ID" hidden>
+        <div class="media" data-slot="userid_bg"></div>
+        <img class="logo" src="assets/img/ti-logo.png" alt="Tooling Intelligence, Inventory Management Solutions">
+        <div class="userid-copy">
+          <h2 class="heading">Revolutionise your inventory management</h2>
+          <p class="body">Learn how our innovative inventory management solutions can help you revolutionise control of your assets and consumables.</p>
+          <p class="prompt">
+            <svg class="prompt-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="2" opacity=".45"/>
+              <circle cx="10" cy="10" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/>
+              <path d="M10.5 10.5 21 14.2l-4.3 1.7 3.6 3.6-1.9 1.9-3.6-3.6-1.7 4.3z" fill="currentColor"/>
+            </svg>
+            <span><strong>Enter your user ID below</strong> to begin.</span>
+          </p>
+        </div>
+        <form class="userid-form" id="userid-form" novalidate autocomplete="off">
+          <label class="visually-hidden" for="userid">User ID</label>
+          <input class="userid-input" id="userid" name="userid" type="text" placeholder="Type your user ID here..." spellcheck="false" autocapitalize="off" maxlength="40">
+          <p class="userid-error" id="userid-error" role="alert"></p>
+          <button class="btn btn-submit" type="submit">Submit</button>
+        </form>
+      </section>
+
+      <!-- The scene: environment clip > End still pans onto the product > zoom clip > HTML device screen.
+           All layers live on one slide so every hand-off is a layer change, never a slide change. -->
+      <section class="slide slide-clip" id="slide-scene" aria-label="Environment" hidden>
+        <div class="media" id="env-media"></div>
+        <div class="frame1080 pan-layer" id="pan-layer"><img class="pan-img" id="pan-img" alt=""></div>
+        <div class="media zoom-media" id="zoom-media"></div>
+        <div class="device" id="device" hidden>
+          <img class="device-plate" id="device-plate" alt="">
+          <div class="device-welcome" id="device-welcome"></div>
+          <div class="device-field" id="device-field"><span id="device-field-text"></span><span class="device-caret" id="device-caret"></span></div>
+          <div class="device-enter" id="device-enter"></div>
+        </div>
+      </section>
+
+      <!-- Physical login action, for badge and barcode logins -->
+      <section class="slide slide-clip" id="slide-login-action" aria-label="Login" hidden>
+        <div class="media" id="login-media"></div>
+      </section>
+
+      <!-- Stub: where the next screens will go -->
+      <section class="slide slide-next" id="slide-next" aria-label="Next" hidden>
+        <img class="logo" src="assets/img/ti-logo.png" alt="Tooling Intelligence, Inventory Management Solutions">
+        <div class="next-panel">
+          <p class="next-eyebrow">Config loaded</p>
+          <dl class="next-config" id="next-config"></dl>
+          <p class="next-note" id="next-note">The screens after login are the next part to build.</p>
+          <button class="btn btn-submit btn-small" id="btn-restart" type="button">Start again</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/scorm.js"></script>
+  <script src="js/media.js"></script>
+  <script src="data/configs.js"></script>
+  <script src="js/demo.js"></script>
+</body>
+</html>

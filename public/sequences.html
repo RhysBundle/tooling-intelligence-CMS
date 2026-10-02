@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tooling Intelligence - Sequence Builder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-dark: #0a0f1a;
+            --bg-card: #111827;
+            --bg-input: #1a2234;
+            --border: #2a3548;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --accent: #22d3ee;
+            --accent-hover: #06b6d4;
+            --accent-glow: rgba(34, 211, 238, 0.2);
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1500px; margin: 0 auto; padding: 20px; }
+
+        header {
+            padding: 30px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .logo-img { height: 50px; width: auto; }
+
+        .header-subtitle { margin-left: auto; text-align: right; }
+        .header-subtitle h2 { font-size: 1.1rem; font-weight: 500; }
+        .header-subtitle p { font-size: 0.85rem; color: var(--text-secondary); }
+
+        nav {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px;
+            margin-bottom: 24px;
+        }
+
+        nav a {
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid var(--border);
+        }
+
+        nav a:hover { color: var(--text-primary); border-color: var(--accent); }
+        nav a.active { background: var(--accent); color: var(--bg-dark); border-color: var(--accent); }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 300px 1fr 360px;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 1280px) { .grid { grid-template-columns: 280px 1fr; } }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--accent);
+        }
+
+        .card h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-secondary);
+            margin: 20px 0 10px;
+        }
+
+        .card h3:first-of-type { margin-top: 0; }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        select { cursor: pointer; }
+        select option { background: var(--bg-card); color: var(--text-primary); }
+
+        .form-group { margin-bottom: 16px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .btn {
+            padding: 12px 22px;
+            border: none;
+            border-radius: 22px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, #0891b2 100%);
+            color: var(--bg-dark);
+            width: 100%;
+        }
+
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--accent-glow); }
+        .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover { background: var(--border); }
+
+        .btn-small { padding: 7px 14px; font-size: 0.8rem; border-radius: 16px; }
+        .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
+
+        /* ---- Event library ---- */
+
+        .event-list { max-height: 620px; overflow-y: auto; padding-right: 6px; }
+        .event-list::-webkit-scrollbar { width: 6px; }
+        .event-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .event-btn {
+            width: 100%;
+            text-align: left;
+            padding: 12px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.875rem;
+            cursor: pointer;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            transition: all 0.15s ease;
+        }
+
+        .event-btn:hover { border-color: var(--accent); background: #202b40; }
+        .event-btn span.name { flex: 1; }
+
+        .tag {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 3px 7px;
+            border-radius: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .tag-3d { background: rgba(168, 85, 247, 0.2); color: #c4a2f7; }
+        .tag-beat { background: rgba(148, 163, 184, 0.18); color: var(--text-secondary); }
+        .tag-handback { background: rgba(168, 85, 247, 0.2); color: #c4a2f7; }
+        .tag-new { background: rgba(245, 158, 11, 0.18); color: var(--warning); }
+
+        /* ---- Step list ---- */
+
+        .steps { min-height: 120px; }
+
+        .step {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .step.invalid { border-color: var(--danger); }
+        .step.dragging { opacity: 0.4; }
+        .step.drop-target { border-color: var(--accent); border-style: dashed; }
+
+        .step-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            cursor: grab;
+        }
+
+        .step-index {
+            width: 26px;
+            height: 26px;
+            flex: 0 0 26px;
+            border-radius: 50%;
+            background: var(--bg-dark);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .step-title { flex: 1; font-size: 0.92rem; font-weight: 500; }
+        .step-sub { display: block; font-size: 0.76rem; color: var(--text-secondary); font-weight: 400; }
+
+        .step-tools { display: flex; gap: 4px; }
+
+        .icon-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-dark);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            line-height: 1;
+        }
+
+        .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+        .icon-btn.del:hover { color: var(--danger); border-color: var(--danger); }
+
+        .step-body {
+            padding: 0 16px 16px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+            display: none;
+        }
+
+        .step.open .step-body { display: block; }
+
+        .char-count { float: right; font-size: 0.72rem; color: var(--text-secondary); }
+        .char-count.over { color: var(--danger); font-weight: 600; }
+
+        .note {
+            font-size: 0.78rem;
+            color: var(--warning);
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 2px solid var(--warning);
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-bottom: 14px;
+        }
+
+        /* ---- Validation panel ---- */
+
+        .issue {
+            font-size: 0.83rem;
+            padding: 9px 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid;
+        }
+
+        .issue.error { background: rgba(239, 68, 68, 0.12); border-color: var(--danger); color: #fca5a5; }
+        .issue.warning { background: rgba(245, 158, 11, 0.12); border-color: var(--warning); color: #fcd34d; }
+        .issue.ok { background: rgba(16, 185, 129, 0.12); border-color: var(--success); color: #6ee7b7; }
+
+        .cost-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+
+        .cost-tile {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .cost-tile strong { display: block; font-size: 1.4rem; line-height: 1.2; }
+        .cost-tile small { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; }
+        .cost-tile.gui strong { color: var(--success); }
+        .cost-tile.steps strong { color: var(--accent); }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 0.9rem; }
+
+        .message { padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; display: none; font-size: 0.9rem; }
+        .message.success { background: rgba(16, 185, 129, 0.15); border: 1px solid var(--success); color: var(--success); display: block; }
+        .message.error { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: var(--danger); display: block; }
+
+        .saved-list { max-height: 240px; overflow-y: auto; }
+
+        .saved-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+
+        .saved-item code { color: var(--accent); font-family: 'Monaco', 'Consolas', monospace; }
+        .saved-item .meta { color: var(--text-secondary); font-size: 0.75rem; }
+        .saved-item .row-tools { display: flex; gap: 6px; }
+
+        a.link { color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+        a.link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="ti-logo.png" alt="Tooling Intelligence" class="logo-img">
+            <div class="header-subtitle">
+                <h2>Sequence Builder</h2>
+                <p>Build a customer's exact workflow, step by step</p>
+            </div>
+        </header>
+
+        <nav>
+            <a href="index.html">Configurations</a>
+            <a href="sequences.html" class="active">Sequence Builder</a>
+            <a href="player.html">Preview Player</a>
+        </nav>
+
+        <div class="grid">
+            <!-- Left: event library -->
+            <div class="card">
+                <h2>Event Library</h2>
+                <div class="event-list" id="event-library"></div>
+            </div>
+
+            <!-- Middle: the sequence -->
+            <div class="card">
+                <h2>Sequence</h2>
+
+                <div id="message" class="message"></div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="user_id">User ID</label>
+                        <input type="text" id="user_id" placeholder="e.g. TI_DEMO">
+                    </div>
+                    <div class="form-group">
+                        <label for="seq_name">Sequence name</label>
+                        <input type="text" id="seq_name" placeholder="e.g. Acme Aerospace demo">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="playback_mode">Playback mode</label>
+                        <select id="playback_mode">
+                            <option value="auto">Auto play</option>
+                            <option value="step_through">Step through (viewer clicks)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="default_dwell">Default dwell (ms)</label>
+                        <input type="number" id="default_dwell" value="3000" min="500" max="30000" step="250">
+                    </div>
+                </div>
+
+                <h3>Steps</h3>
+                <div class="steps" id="steps">
+                    <div class="empty-state">No steps yet. Add events from the library on the left.</div>
+                </div>
+
+                <button class="btn btn-primary" id="save-btn">Save sequence</button>
+                <button class="btn btn-secondary" id="clear-btn">Clear</button>
+            </div>
+
+            <!-- Right: validation + saved -->
+            <div class="card">
+                <h2>Validation</h2>
+
+                <div class="cost-split">
+                    <div class="cost-tile gui">
+                        <strong id="run-time">0s</strong>
+                        <small>Run time</small>
+                    </div>
+                    <div class="cost-tile steps">
+                        <strong id="run-steps">0</strong>
+                        <small>Screens</small>
+                    </div>
+                </div>
+
+                <div id="issues"></div>
+
+                <h3>Saved sequences</h3>
+                <div class="saved-list" id="saved-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/shared/catalogue.js"></script>
+    <script src="/shared/event-types.js"></script>
+    <script src="/shared/sequence-validator.js"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        var steps = [];
+        var editingExisting = false;
+        var dragFrom = null;
+
+        var el = {
+            library: document.getElementById('event-library'),
+            steps: document.getElementById('steps'),
+            issues: document.getElementById('issues'),
+            saved: document.getElementById('saved-list'),
+            userId: document.getElementById('user_id'),
+            name: document.getElementById('seq_name'),
+            mode: document.getElementById('playback_mode'),
+            dwell: document.getElementById('default_dwell'),
+            save: document.getElementById('save-btn'),
+            clear: document.getElementById('clear-btn'),
+            message: document.getElementById('message'),
+            runTime: document.getElementById('run-time'),
+            runSteps: document.getElementById('run-steps')
+        };
+
+        // ---- Event library ----------------------------------------
+
+        // Grouped by which side of the handover the event sits on, because
+        // that is the architecture: one 3D clip in, screens throughout, 3D out.
+        function renderLibrary() {
+            var groups = { '3d': [], webobject: [] };
+            TIEvents.EVENT_TYPES.forEach(function (t) { groups[t.stage].push(t); });
+
+            var html = '';
+            [
+                ['3d', '3D clip'],
+                ['webobject', 'Web Object screens']
+            ].forEach(function (pair) {
+                html += '<h3>' + pair[1] + '</h3>';
+                groups[pair[0]].forEach(function (t) {
+                    var tag = t.stage === '3d' ? '<span class="tag tag-3d">3D</span>'
+                        : t.handback ? '<span class="tag tag-handback">exit</span>'
+                        : t.beat ? '<span class="tag tag-beat">beat</span>' : '';
+                    html += '<button class="event-btn" data-type="' + t.id + '">' +
+                        '<span class="name">' + escapeHtml(t.label) + '</span>' + tag +
+                        '</button>';
+                });
+            });
+            el.library.innerHTML = html;
+
+            el.library.querySelectorAll('.event-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () { addStep(btn.dataset.type); });
+            });
+        }
+
+        // ---- Steps -------------------------------------------------
+
+        function addStep(typeId) {
+            var step = TIEvents.defaultStep(typeId);
+            if (!step) return;
+            steps.push(step);
+            render();
+            var nodes = el.steps.querySelectorAll('.step');
+            if (nodes.length) {
+                nodes[nodes.length - 1].classList.add('open');
+                nodes[nodes.length - 1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function renderSteps() {
+            if (steps.length === 0) {
+                el.steps.innerHTML = '<div class="empty-state">No steps yet. Add events from the library on the left.</div>';
+                return;
+            }
+
+            var openSet = {};
+            el.steps.querySelectorAll('.step.open').forEach(function (n) { openSet[n.dataset.index] = true; });
+
+            el.steps.innerHTML = steps.map(function (step, i) {
+                var type = TIEvents.get(step.type);
+                if (!type) return '';
+                var stepTag = type.stage === '3d'
+                    ? (TIEvents.needsNewClip(step)
+                        ? '<span class="tag tag-new">new clip</span>'
+                        : '<span class="tag tag-3d">3D</span>')
+                    : type.handback ? '<span class="tag tag-handback">exit to 3D</span>'
+                    : type.beat ? '<span class="tag tag-beat">beat</span>' : '';
+
+                var body = '';
+                if (type.note) body += '<div class="note">' + escapeHtml(type.note) + '</div>';
+
+                (type.params || []).forEach(function (p) {
+                    body += '<div class="form-group">' +
+                        '<label>' + escapeHtml(p.label) + '</label>' +
+                        '<select data-step="' + i + '" data-param="' + p.key + '">' +
+                        p.values.map(function (v) {
+                            return '<option value="' + v.value + '"' +
+                                (step.params[p.key] === v.value ? ' selected' : '') + '>' +
+                                escapeHtml(v.label) + '</option>';
+                        }).join('') +
+                        '</select></div>';
+                });
+
+                (type.text || []).forEach(function (f) {
+                    var val = step.text[f.key] == null ? '' : String(step.text[f.key]);
+                    var over = val.length > f.maxLength;
+                    body += '<div class="form-group">' +
+                        '<label>' + escapeHtml(f.label) +
+                        '<span class="char-count' + (over ? ' over' : '') + '" data-count-for="' + i + '-' + f.key + '">' +
+                        val.length + '/' + f.maxLength + '</span></label>' +
+                        '<input type="text" data-step="' + i + '" data-text="' + f.key +
+                        '" data-max="' + f.maxLength + '" value="' + escapeHtml(val) +
+                        '" placeholder="' + escapeHtml(f.placeholder || '') + '"></div>';
+                });
+
+                body += '<div class="form-group">' +
+                    '<label>Dwell for this step (ms, blank uses the default)</label>' +
+                    '<input type="number" data-step="' + i + '" data-dwell="1" min="500" max="30000" step="250" value="' +
+                    (step.dwell_ms == null ? '' : step.dwell_ms) + '"></div>';
+
+                return '<div class="step' + (openSet[i] ? ' open' : '') + '" data-index="' + i + '" draggable="true">' +
+                    '<div class="step-head">' +
+                        '<span class="step-index">' + (i + 1) + '</span>' +
+                        '<span class="step-title">' + escapeHtml(type.label) +
+                            '<span class="step-sub">' + escapeHtml(TIEvents.describe(step)) + '</span></span>' +
+                        stepTag +
+                        '<span class="step-tools">' +
+                            '<button class="icon-btn" data-move="up" data-index="' + i + '" title="Move up">&#9650;</button>' +
+                            '<button class="icon-btn" data-move="down" data-index="' + i + '" title="Move down">&#9660;</button>' +
+                            '<button class="icon-btn" data-dup="' + i + '" title="Duplicate">&#10697;</button>' +
+                            '<button class="icon-btn del" data-del="' + i + '" title="Remove">&times;</button>' +
+                        '</span>' +
+                    '</div>' +
+                    '<div class="step-body">' + body + '</div>' +
+                '</div>';
+            }).join('');
+
+            wireSteps();
+        }
+
+        function wireSteps() {
+            el.steps.querySelectorAll('.step-head').forEach(function (head) {
+                head.addEventListener('click', function (e) {
+                    if (e.target.closest('button')) return;
+                    head.parentNode.classList.toggle('open');
+                });
+            });
+
+            el.steps.querySelectorAll('[data-move]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var i = Number(btn.dataset.index);
+                    var j = btn.dataset.move === 'up' ? i - 1 : i + 1;
+                    if (j < 0 || j >= steps.length) return;
+                    var tmp = steps[i]; steps[i] = steps[j]; steps[j] = tmp;
+                    render();
+                });
+            });
+
+            el.steps.querySelectorAll('[data-dup]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var i = Number(btn.dataset.dup);
+                    steps.splice(i + 1, 0, JSON.parse(JSON.stringify(steps[i])));
+                    render();
+                });
+            });
+
+            el.steps.querySelectorAll('[data-del]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    steps.splice(Number(btn.dataset.del), 1);
+                    render();
+                });
+            });
+
+            el.steps.querySelectorAll('select[data-param]').forEach(function (sel) {
+                sel.addEventListener('change', function () {
+                    steps[Number(sel.dataset.step)].params[sel.dataset.param] = sel.value;
+                    render();
+                });
+            });
+
+            el.steps.querySelectorAll('input[data-text]').forEach(function (input) {
+                input.addEventListener('input', function () {
+                    var i = Number(input.dataset.step);
+                    steps[i].text[input.dataset.text] = input.value;
+                    var counter = el.steps.querySelector('[data-count-for="' + i + '-' + input.dataset.text + '"]');
+                    if (counter) {
+                        var max = Number(input.dataset.max);
+                        counter.textContent = input.value.length + '/' + max;
+                        counter.classList.toggle('over', input.value.length > max);
+                    }
+                    validate();
+                });
+            });
+
+            el.steps.querySelectorAll('input[data-dwell]').forEach(function (input) {
+                input.addEventListener('input', function () {
+                    var v = input.value.trim();
+                    steps[Number(input.dataset.step)].dwell_ms = v === '' ? null : Number(v);
+                    validate();
+                });
+            });
+
+            // Drag to reorder.
+            el.steps.querySelectorAll('.step').forEach(function (node) {
+                node.addEventListener('dragstart', function () {
+                    dragFrom = Number(node.dataset.index);
+                    node.classList.add('dragging');
+                });
+                node.addEventListener('dragend', function () {
+                    node.classList.remove('dragging');
+                    el.steps.querySelectorAll('.step').forEach(function (n) { n.classList.remove('drop-target'); });
+                });
+                node.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                    node.classList.add('drop-target');
+                });
+                node.addEventListener('dragleave', function () { node.classList.remove('drop-target'); });
+                node.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    var to = Number(node.dataset.index);
+                    if (dragFrom == null || dragFrom === to) return;
+                    var moved = steps.splice(dragFrom, 1)[0];
+                    steps.splice(to, 0, moved);
+                    dragFrom = null;
+                    render();
+                });
+            });
+        }
+
+        // ---- Validation -------------------------------------------
+
+        function currentSequence() {
+            return {
+                user_id: el.userId.value.trim(),
+                name: el.name.value.trim(),
+                playback_mode: el.mode.value,
+                default_dwell_ms: Number(el.dwell.value),
+                steps: steps
+            };
+        }
+
+        function validate() {
+            var result = TIValidator.validate(currentSequence());
+
+            // Run time is what matters now that nothing needs rendering:
+            // will a prospect sit through this. The 3D bookends are excluded
+            // because their length is the length of the video clips.
+            el.runTime.textContent = TIValidator.formatDuration(
+                TIValidator.estimateDuration(currentSequence()));
+            el.runSteps.textContent = steps.filter(function (s) {
+                return TIEvents.stageOf(s) === 'webobject';
+            }).length;
+
+            var html = '';
+            if (result.errors.length === 0) {
+                html += '<div class="issue ok">Sequence is valid. ' + steps.length + ' step' +
+                    (steps.length === 1 ? '' : 's') + '.</div>';
+            }
+            result.errors.forEach(function (e) {
+                html += '<div class="issue error">' + escapeHtml(e.message) + '</div>';
+            });
+            result.warnings.forEach(function (w) {
+                html += '<div class="issue warning">' + escapeHtml(w.message) + '</div>';
+            });
+            el.issues.innerHTML = html || '<div class="empty-state">Add steps to see validation.</div>';
+
+            el.save.disabled = !result.valid;
+            el.save.textContent = editingExisting ? 'Update sequence' : 'Save sequence';
+
+            el.steps.querySelectorAll('.step').forEach(function (n) { n.classList.remove('invalid'); });
+            result.errors.forEach(function (e) {
+                if (e.index == null) return;
+                var n = el.steps.querySelector('.step[data-index="' + e.index + '"]');
+                if (n) n.classList.add('invalid');
+            });
+
+            return result;
+        }
+
+        function render() {
+            renderSteps();
+            validate();
+        }
+
+        // ---- Persistence -------------------------------------------
+
+        async function save() {
+            var seq = currentSequence();
+            var url = editingExisting ? '/api/sequence/' + encodeURIComponent(seq.user_id) : '/api/sequence';
+            var method = editingExisting ? 'PUT' : 'POST';
+
+            try {
+                var res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(seq)
+                });
+                var body = await res.json();
+
+                if (res.ok) {
+                    editingExisting = true;
+                    showMessage('Saved. ' + body.step_count + ' steps stored for ' + seq.user_id + '.', 'success');
+                    loadSaved();
+                    validate();
+                } else if (res.status === 409) {
+                    // Sequence already there: fall through to an update.
+                    editingExisting = true;
+                    save();
+                } else {
+                    showMessage(body.error || 'Save failed', 'error');
+                }
+            } catch (e) {
+                showMessage('Network error: ' + e.message, 'error');
+            }
+        }
+
+        async function loadSaved() {
+            try {
+                var res = await fetch('/api/sequences');
+                var list = await res.json();
+
+                if (!list.length) {
+                    el.saved.innerHTML = '<div class="empty-state">Nothing saved yet.</div>';
+                    return;
+                }
+
+                el.saved.innerHTML = list.map(function (s) {
+                    return '<div class="saved-item">' +
+                        '<span><code>' + escapeHtml(s.user_id) + '</code>' +
+                        '<span class="meta"> ' + s.step_count + ' steps, ' +
+                        (s.playback_mode === 'auto' ? 'auto' : 'step through') + '</span></span>' +
+                        '<span class="row-tools">' +
+                        '<button class="btn btn-small btn-secondary" style="width:auto;margin:0" data-load="' +
+                        escapeHtml(s.user_id) + '">Load</button>' +
+                        '<a class="btn btn-small btn-secondary" style="width:auto;margin:0;text-decoration:none" ' +
+                        'href="player.html?user=' + encodeURIComponent(s.user_id) + '" target="_blank">Play</a>' +
+                        '<button class="btn btn-small btn-danger" data-del-seq="' + escapeHtml(s.user_id) + '">Del</button>' +
+                        '</span></div>';
+                }).join('');
+
+                el.saved.querySelectorAll('[data-load]').forEach(function (b) {
+                    b.addEventListener('click', function () { load(b.dataset.load); });
+                });
+                el.saved.querySelectorAll('[data-del-seq]').forEach(function (b) {
+                    b.addEventListener('click', function () { remove(b.dataset.delSeq); });
+                });
+            } catch (e) {
+                el.saved.innerHTML = '<div class="empty-state">Could not load sequences.</div>';
+            }
+        }
+
+        async function load(userId) {
+            try {
+                var res = await fetch('/api/sequence/' + encodeURIComponent(userId));
+                if (!res.ok) { showMessage('Could not load ' + userId, 'error'); return; }
+                var s = await res.json();
+
+                el.userId.value = s.user_id;
+                el.name.value = s.name || '';
+                el.mode.value = s.playback_mode || 'auto';
+                el.dwell.value = s.default_dwell_ms || 3000;
+                steps = s.steps || [];
+                editingExisting = true;
+                render();
+                showMessage('Loaded ' + s.user_id + '.', 'success');
+            } catch (e) {
+                showMessage('Network error: ' + e.message, 'error');
+            }
+        }
+
+        async function remove(userId) {
+            if (!confirm('Delete the sequence for "' + userId + '"? The four-field config is left alone.')) return;
+            try {
+                var res = await fetch('/api/sequence/' + encodeURIComponent(userId), { method: 'DELETE' });
+                if (res.ok) {
+                    showMessage('Deleted ' + userId + '.', 'success');
+                    if (el.userId.value.trim() === userId) editingExisting = false;
+                    loadSaved();
+                }
+            } catch (e) {
+                showMessage('Network error: ' + e.message, 'error');
+            }
+        }
+
+        // ---- Utilities ---------------------------------------------
+
+        function showMessage(text, kind) {
+            el.message.textContent = text;
+            el.message.className = 'message ' + kind;
+            setTimeout(function () { el.message.className = 'message'; }, 5000);
+        }
+
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // ---- Wiring ------------------------------------------------
+
+        el.save.addEventListener('click', save);
+        el.clear.addEventListener('click', function () {
+            steps = [];
+            editingExisting = false;
+            el.userId.value = '';
+            el.name.value = '';
+            render();
+        });
+        [el.userId, el.name, el.mode, el.dwell].forEach(function (n) {
+            n.addEventListener('input', function () {
+                if (n === el.userId) editingExisting = false;
+                validate();
+            });
+        });
+
+        renderLibrary();
+        render();
+        loadSaved();
+
+        var preload = new URLSearchParams(location.search).get('user');
+        if (preload) load(preload);
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+/* Fonts are bundled so the demo works offline and inside an LMS. */
+@font-face { font-family: 'Open Sans'; font-weight: 300; font-display: block; src: url('../assets/fonts/open-sans-latin-300-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Open Sans'; font-weight: 400; font-display: block; src: url('../assets/fonts/open-sans-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Open Sans'; font-weight: 600; font-display: block; src: url('../assets/fonts/open-sans-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Arimo'; font-weight: 400; font-display: block; src: url('../assets/fonts/arimo-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Arimo'; font-weight: 700; font-display: block; src: url('../assets/fonts/arimo-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Open Sans'; font-weight: 700; font-display: block; src: url('../assets/fonts/open-sans-latin-700-normal.woff2') format('woff2'); }
+
+:root {
+  --ti-blue: #3a8ee0;
+  --start-a: #e0683a;
+  --start-b: #b5424e;
+  --submit-a: #3e86d8;
+  --submit-b: #4fb3a4;
+  --error: #ffa395;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+
+/* The stage is built at exactly 1280x720 and scaled to fit, like the
+   Storyline player. Do not switch positions to responsive units. */
+.viewport { position: fixed; inset: 0; }
+.stage {
+  position: absolute; left: 50%; top: 50%;
+  width: 1280px; height: 720px;
+  transform: translate(-50%, -50%) scale(var(--s, 1));
+  overflow: hidden; background: #0b1420;
+}
+
+.slide { position: absolute; inset: 0; opacity: 0; transition: opacity .45s ease; }
+.slide.is-active { opacity: 1; }
+.slide[hidden] { display: block; visibility: hidden; pointer-events: none; }
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Media slots ---------- */
+.media { position: absolute; inset: 0; overflow: hidden; }
+.media video, .media img.poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.media img.poster { z-index: 0; }
+.media video { z-index: 1; }
+
+/* Fallback looks, used until the real files exist */
+.media[data-slot="title_bg"] { background: linear-gradient(160deg, #6a8aa8 0%, #4d6f90 45%, #3c5d7c 100%); }
+.media[data-slot="userid_bg"] {
+  background:
+    radial-gradient(ellipse 55% 75% at 78% 28%, rgba(46,110,180,.75), rgba(20,50,90,.35) 55%, transparent 80%),
+    radial-gradient(ellipse 60% 60% at 50% 110%, rgba(30,70,120,.45), transparent 70%),
+    #05080e;
+}
+.slide-clip { background: #000; }
+.media img.end-still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; opacity: 0; }
+.media img.end-still.is-shown { opacity: 1; }
+
+.ph-badge {
+  position: absolute; left: 16px; bottom: 16px; z-index: 5;
+  padding: 6px 12px; border: 1.5px dashed rgba(255,255,255,.7); border-radius: 6px;
+  background: rgba(0,0,0,.45); font-size: 13px; line-height: 1.35; color: #fff;
+}
+.ph-badge b { font-weight: 600; }
+
+.ph-clip {
+  position: absolute; inset: 40px; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  border: 2px dashed rgba(255,255,255,.55); border-radius: 12px;
+  background: repeating-linear-gradient(135deg, rgba(255,255,255,.03) 0 18px, rgba(255,255,255,.06) 18px 36px);
+  text-align: center;
+}
+.ph-clip .ph-kicker { margin: 0; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.65); }
+.ph-clip .ph-title { margin: 0; font-size: 34px; font-weight: 300; }
+.ph-clip .ph-file { margin: 0; font-size: 16px; color: rgba(255,255,255,.75); font-family: Consolas, 'Courier New', monospace; }
+.ph-clip .ph-count { margin: 0; font-size: 14px; color: rgba(255,255,255,.6); }
+
+/* ---------- Shared ---------- */
+.logo { position: absolute; top: 24px; right: 36px; width: 255px; height: auto; z-index: 3; }
+
+.btn {
+  position: absolute; left: 50%; transform: translateX(-50%); z-index: 3;
+  width: 250px; height: 62px; border: 0; border-radius: 31px;
+  font: 700 21px/1 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff;
+  cursor: pointer; box-shadow: 0 5px 12px rgba(0,0,0,.35);
+  transition: filter .15s ease, transform .15s ease;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:active { transform: translateX(-50%) translateY(1px); }
+.btn:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+
+/* ---------- Slide 1: title ---------- */
+.tint-title {
+  position: absolute; inset: 0; z-index: 2;
+  background: linear-gradient(165deg, rgba(56,112,196,.70) 0%, rgba(58,124,190,.62) 50%, rgba(66,150,170,.62) 100%);
+}
+.title {
+  position: absolute; left: 0; right: 0; top: 238px; z-index: 3; margin: 0;
+  font-weight: 400; font-size: 46px; line-height: 66px; text-align: center;
+  text-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.btn-start { top: 435px; background: linear-gradient(90deg, var(--start-a), var(--start-b)); }
+
+/* ---------- Slide 2: user ID ---------- */
+.userid-copy { position: absolute; left: 60px; top: 82px; width: 800px; z-index: 3; }
+.heading { margin: 0 0 18px; font-weight: 400; font-size: 38px; line-height: 1.2; color: var(--ti-blue); }
+.body { margin: 0; max-width: 770px; font-size: 18px; line-height: 36px; }
+.prompt { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; font-size: 18px; }
+.prompt strong { font-weight: 700; }
+.prompt-icon { width: 30px; height: 30px; color: var(--ti-blue); flex: none; }
+
+.userid-input {
+  position: absolute; left: 260px; top: 322px; z-index: 3;
+  width: 760px; height: 84px; padding: 0 36px;
+  border: 2px solid transparent; border-radius: 42px; outline: none;
+  background: rgba(118,128,140,.55); color: #fff;
+  font: 400 22px/1 'Open Sans', 'Segoe UI', Arial, sans-serif;
+  transition: border-color .15s ease, background .15s ease;
+}
+.userid-input::placeholder { color: rgba(235,240,245,.85); }
+.userid-input:focus { border-color: rgba(120,180,240,.9); background: rgba(118,128,140,.68); }
+.userid-input.is-invalid { border-color: var(--error); }
+.userid-error {
+  position: absolute; left: 260px; top: 420px; width: 760px; margin: 0; z-index: 3;
+  min-height: 24px; text-align: center; font-size: 17px; color: var(--error);
+}
+.btn-submit { top: 505px; background: linear-gradient(90deg, var(--submit-a), var(--submit-b)); }
+
+/* ---------- Slide from the products to the zoom ----------
+   frame1080 is a layer in the renders' own 1920x1080 pixels, scaled to the
+   stage, so the ext and slide_by numbers in media.js apply as they are. */
+.frame1080 {
+  position: absolute; left: 0; top: 0;
+  width: 1920px; height: 1080px;
+  transform: scale(0.6666667); transform-origin: 0 0;
+  overflow: hidden;
+}
+#env-media { z-index: 1; }
+.pan-layer { z-index: 2; opacity: 0; transition: opacity 200ms linear; } /* SWAP_MS */
+.pan-layer.is-shown { opacity: 1; }
+.pan-img {
+  position: absolute; will-change: transform;
+  transition: transform 1500ms cubic-bezier(.45, 0, .25, 1); /* SLIDE_MS in demo.js */
+}
+.pan-img.no-anim { transition: none; }
+.zoom-media { z-index: 3; opacity: 0; transition: opacity 500ms linear; }
+.zoom-media.is-shown { opacity: 1; }
+
+/* ---------- Device screen ----------
+   Laid out in the 1920x1080 pixels of the zoom clip's last frame, then
+   scaled to the stage, so every position matches the render exactly. */
+.device {
+  position: absolute; left: 0; top: 0; z-index: 6;
+  width: 1920px; height: 1080px;
+  transform: scale(0.6666667); transform-origin: 0 0;
+  font-family: 'Arimo', Arial, Helvetica, sans-serif;
+}
+.device[hidden] { display: none; }
+.device-plate { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+.device-welcome {
+  position: absolute; left: 585px; top: 324px; width: 660px;
+  font-size: 35.2px; line-height: 41.5px; text-align: center; color: #000;
+  white-space: pre-line;
+}
+.device-field {
+  position: absolute; left: 623px; top: 621px; width: 588px; height: 62px;
+  display: flex; align-items: center; padding-left: 18px;
+  font-size: 32px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.55);
+}
+.device-caret { display: none; width: 2px; height: 36px; margin-left: 3px; background: #fff; animation: caret 1s steps(1) infinite; }
+.device-field.is-typing .device-caret { display: inline-block; }
+@keyframes caret { 50% { opacity: 0; } }
+.device-enter { position: absolute; left: 1552px; top: 792px; width: 253px; height: 103px; border-radius: 2px; transition: background .12s ease; }
+.device-enter.is-pressed { background: rgba(255,255,255,.22); }
+
+/* ---------- Stub: next ---------- */
+.slide-next { background: radial-gradient(ellipse 60% 70% at 70% 30%, #1d4f86, #0b1a2e 55%, #05080e); }
+.next-panel { position: absolute; left: 60px; top: 150px; width: 640px; }
+.next-eyebrow { margin: 0 0 16px; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--ti-blue); font-weight: 600; }
+.next-config { display: grid; grid-template-columns: 180px 1fr; gap: 10px 20px; margin: 0 0 28px; font-size: 20px; }
+.next-config dt { color: rgba(255,255,255,.65); }
+.next-config dd { margin: 0; }
+.next-note { margin: 0 0 40px; font-size: 18px; color: rgba(255,255,255,.8); }
+.btn-small { position: relative; left: 0; top: auto; transform: none; width: 200px; height: 52px; font-size: 18px; }
+.btn-small:active { transform: translateY(1px); }
+
+/* The slide to the product is the content, so it runs even with reduced motion on. */
+@media (prefers-reduced-motion: reduce) { .slide { transition: none; } }

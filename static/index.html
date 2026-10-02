@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="data:,">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tooling Intelligence - Sequence Builder Demo</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-dark: #0a0f1a;
+            --bg-card: #111827;
+            --bg-input: #1a2234;
+            --border: #2a3548;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --accent: #22d3ee;
+            --accent-glow: rgba(34, 211, 238, 0.2);
+            --warning: #f59e0b;
+            --clip: #c4a2f7;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; padding-block: 20px; padding-inline: 20px; }
+
+        header { padding-block: 30px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .logo-img { height: 50px; width: auto; }
+        .header-subtitle { margin-left: auto; text-align: right; }
+        .header-subtitle h1 { font-size: 1.1rem; font-weight: 500; }
+        .header-subtitle p { font-size: 0.85rem; color: var(--text-secondary); }
+
+        .notice {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid var(--warning);
+            color: #fcd34d;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            margin-bottom: 26px;
+        }
+
+        .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 34px; }
+        @media (max-width: 760px) { .cards { grid-template-columns: 1fr; } }
+
+        a.card {
+            display: block;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 26px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s ease;
+        }
+
+        a.card:hover { border-color: var(--accent); box-shadow: 0 6px 24px var(--accent-glow); transform: translateY(-2px); }
+        a.card h2 { font-size: 1.05rem; color: var(--accent); margin-bottom: 10px; }
+        a.card p { font-size: 0.9rem; color: var(--text-secondary); }
+        a.card span.go { display: inline-block; margin-top: 14px; font-size: 0.85rem; color: var(--accent); font-weight: 500; }
+
+        section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 26px; margin-bottom: 20px; }
+        section h2 { font-size: 1rem; color: var(--accent); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        section p { font-size: 0.92rem; margin-bottom: 12px; }
+        section p:last-child { margin-bottom: 0; }
+
+        ol.stages { list-style: none; counter-reset: stage; }
+
+        ol.stages li {
+            counter-increment: stage;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.92rem;
+        }
+
+        ol.stages li:last-child { border-bottom: none; }
+
+        ol.stages li::before {
+            content: counter(stage);
+            flex: 0 0 26px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        ol.stages li b { color: var(--text-primary); }
+        .pill { display: inline-block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; padding: 3px 8px; border-radius: 10px; margin-left: 6px; }
+        .pill.threeD { background: rgba(168, 85, 247, 0.2); color: var(--clip); }
+        .pill.web { background: rgba(34, 211, 238, 0.18); color: var(--accent); }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-secondary); font-weight: 500; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        td:first-child { color: var(--accent); font-family: 'Monaco', 'Consolas', monospace; font-size: 0.82rem; }
+
+        footer { color: var(--text-secondary); font-size: 0.8rem; padding-block: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="ti-logo.png" alt="Tooling Intelligence" class="logo-img">
+            <div class="header-subtitle">
+                <h1>Sequence Builder</h1>
+                <p>Proof of concept, September 2026</p>
+            </div>
+        </header>
+
+        <div class="notice">
+            Offline demo bundle. There is no server behind this, so the three example
+            sequences are built in and anything you create is saved in your own browser
+            only. Nothing is shared and nothing persists if you clear site data.
+        </div>
+
+        <div class="cards">
+            <a class="card" href="sequences.html">
+                <h2>Sequence Builder</h2>
+                <p>Pick events from the library, order them, edit the on-screen copy,
+                   set the pacing. Live validation, and a running total of screens and
+                   run time.</p>
+                <span class="go">Open the builder &rarr;</span>
+            </a>
+            <a class="card" href="player.html">
+                <h2>Preview Player</h2>
+                <p>Plays a sequence back on a recreation of the device UI, auto or
+                   step-through, and shows the variables Storyline would receive at
+                   each step.</p>
+                <span class="go">Open the preview &rarr;</span>
+            </a>
+        </div>
+
+        <section>
+            <h2>How a sequence runs</h2>
+            <ol class="stages">
+                <li><span><b>3D clip<span class="pill threeD">Storyline</span></b><br>
+                    The approach and the physical login action, ending on a still of the
+                    device screen. One clip per login method.</span></li>
+                <li><span><b>Web Object<span class="pill web">HTML</span></b><br>
+                    Every screen from post-login through to log out, on one slide in one
+                    persistent Web Object. The physical acts the operator performs are
+                    shown by what the device screen displays while they happen, not by a
+                    render of the hand.</span></li>
+                <li><span><b>3D clip<span class="pill threeD">Storyline</span></b><br>
+                    The closing sequence, entered when log out hands control back.</span></li>
+            </ol>
+            <p style="margin-top:16px;color:var(--text-secondary);font-size:0.86rem">
+                Because the middle is all screens, nothing in a sequence multiplies by
+                product type or hardware type. A sequence costs its two bookend clips
+                and nothing else.
+            </p>
+        </section>
+
+        <section>
+            <h2>The three worked examples</h2>
+            <table>
+                <thead>
+                    <tr><th>User ID</th><th>What it shows</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>TI_EXAMPLE_1</td>
+                        <td>A straightforward single take: RFID login, job card, typed
+                            search, take one router bit, confirm, log out.</td>
+                    </tr>
+                    <tr>
+                        <td>TI_EXAMPLE_2</td>
+                        <td>The product-kit case. The same door-open beat four times in a
+                            row, which is the repeatability Storyline cannot do with
+                            layers alone.</td>
+                    </tr>
+                    <tr>
+                        <td>TI_EXAMPLE_3</td>
+                        <td>The events that were not in the original build: fingerprint
+                            login, the handheld scanner cradle and a Scale location.
+                            Step through this one.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>What this is not</h2>
+            <p>The real CMS runs on Node and stores sequences in SQLite, so an operator's
+               work is saved and can be fetched by Storyline. None of that is in this
+               bundle, which is a front end only.</p>
+            <p>The Storyline runtime and the variable bridge are not built either. The
+               preview's right-hand panel is the specification for them.</p>
+            <p style="color:var(--text-secondary);font-size:0.86rem">Product thumbnails
+               are placeholder line drawings. Real photographs would come from Tooling
+               Intelligence.</p>
+        </section>
+
+        <footer>Bundle Training, project 2305</footer>
+    </div>
+</body>
+</html>

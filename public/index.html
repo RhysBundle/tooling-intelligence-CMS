@@ -80,13 +80,13 @@
         /* Grid Layout */
         .grid {
             display: grid;
-            grid-template-columns: 420px 1fr;
+            grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
             gap: 30px;
         }
         
         @media (max-width: 1000px) {
             .grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: minmax(0, 1fr);
             }
         }
         
@@ -291,7 +291,7 @@
         
         .config-details {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
             gap: 12px;
             margin-bottom: 16px;
         }
@@ -395,6 +395,27 @@
             line-height: 1.6;
         }
         
+        /* Nav */
+        nav {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px;
+            margin-bottom: 24px;
+        }
+
+        nav a {
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid var(--border);
+        }
+
+        nav a:hover { color: var(--text-primary); border-color: var(--accent); }
+        nav a.active { background: var(--accent); color: var(--bg-dark); border-color: var(--accent); }
+
         /* Badge styles for solution */
         .badge {
             display: inline-block;
@@ -426,7 +447,13 @@
                 <p>Create customised learning experiences</p>
             </div>
         </header>
-        
+
+        <nav>
+            <a href="index.html" class="active">Configurations</a>
+            <a href="sequences.html">Sequence Builder</a>
+            <a href="player.html">Preview Player</a>
+        </nav>
+
         <div class="grid">
             <!-- Left: Form -->
             <div class="card">

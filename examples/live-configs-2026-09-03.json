@@ -1,0 +1,6 @@
+[
+  {"user_id":"test1","solution":"supplysystem","login_type":"barcode","location":"rail_depot","created_at":"2026-07-27 07:26:39","updated_at":"2026-07-27 07:26:39"},
+  {"user_id":"STEUART","solution":"smartdrawer","login_type":"rfid","location":"aircraft_hangar","created_at":"2026-07-21 08:18:08","updated_at":"2026-07-21 08:18:08"},
+  {"user_id":"Ferarri","solution":"supplysystem","login_type":"login_no_password","location":"rail_depot","created_at":"2026-07-13 12:13:06","updated_at":"2026-07-13 12:50:37"},
+  {"user_id":"TI","solution":"smartdrawer","login_type":"rfid","location":"f1_automotive","created_at":"2026-05-18 13:06:23","updated_at":"2026-05-18 13:06:23"}
+]

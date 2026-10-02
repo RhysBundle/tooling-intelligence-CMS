@@ -1,0 +1,39 @@
+{
+  "feather": 96,
+  "f1_automotive": {
+    "ext": 947,
+    "smartdrawer": {
+      "slide": 285.6
+    }
+  },
+  "aircraft_hangar": {
+    "ext": 725,
+    "smartdrawer": {
+      "slide": 303.4
+    }
+  },
+  "cnc_machine_shop": {
+    "ext": 725,
+    "smartdrawer": {
+      "slide": 225.9
+    }
+  },
+  "medical_cleanroom": {
+    "ext": 725,
+    "smartdrawer": {
+      "slide": 257.7
+    }
+  },
+  "rail_depot": {
+    "ext": 725,
+    "smartdrawer": {
+      "slide": 304.0
+    }
+  },
+  "amazon_warehouse": {
+    "ext": 725,
+    "smartdrawer": {
+      "slide": 236.1
+    }
+  }
+}

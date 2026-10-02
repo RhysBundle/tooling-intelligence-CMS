@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tooling Intelligence - Sequence Preview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-dark: #0a0f1a;
+            --bg-card: #111827;
+            --bg-input: #1a2234;
+            --border: #2a3548;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --accent: #22d3ee;
+            --accent-glow: rgba(34, 211, 238, 0.2);
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+
+            /* SupplyPro device UI palette, sampled from the SCORM screens */
+            --sp-chrome: #333333;
+            --sp-chrome-dark: #2a2a2a;
+            --sp-body: #3d3d3d;
+            --sp-red: #c8102e;
+            --sp-red-dark: #8f0a20;
+            --sp-panel: #ffffff;
+            --sp-panel-edge: #9a9a9a;
+            --sp-ink: #1a1a1a;
+            --sp-field: #d9d9d9;
+            --sp-field-edge: #a8a8a8;
+            --sp-select: #4a90d9;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1500px; margin: 0 auto; padding: 20px; }
+
+        header { padding: 30px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .logo-img { height: 50px; width: auto; }
+        .header-subtitle { margin-left: auto; text-align: right; }
+        .header-subtitle h2 { font-size: 1.1rem; font-weight: 500; }
+        .header-subtitle p { font-size: 0.85rem; color: var(--text-secondary); }
+
+        nav { display: flex; gap: 8px; padding: 0 20px; margin-bottom: 24px; }
+
+        nav a {
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid var(--border);
+        }
+
+        nav a:hover { color: var(--text-primary); border-color: var(--accent); }
+        nav a.active { background: var(--accent); color: var(--bg-dark); border-color: var(--accent); }
+
+        .grid { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; }
+        @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+
+        .card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--accent);
+        }
+
+        .card h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-secondary);
+            margin: 22px 0 10px;
+        }
+
+        .controls { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin-bottom: 20px; }
+        .controls .field { flex: 1 1 140px; }
+
+        label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+
+        input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+        .btn {
+            padding: 11px 20px;
+            border: none;
+            border-radius: 22px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn-primary { background: linear-gradient(135deg, var(--accent) 0%, #0891b2 100%); color: var(--bg-dark); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--accent-glow); }
+        .btn-secondary { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); }
+        .btn-secondary:hover { background: var(--border); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* ================================================================
+           DEVICE SCREEN
+           The real SupplyPro UI is 1024x768. Rather than approximate it at
+           whatever width the card happens to be, the screen is built at exactly
+           1024x768 and scaled with a transform, so every proportion, font size
+           and gap matches the reference screenshots at any container width.
+           ================================================================ */
+
+        .stage { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+
+        .device-frame {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #1c1c1c;
+            border-radius: 6px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            background: var(--sp-body);
+        }
+
+        .device {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1024px;
+            height: 768px;
+            transform-origin: top left;
+            transform: scale(var(--s, 1));
+            background: var(--sp-body);
+            color: var(--sp-ink);
+            font-family: Arial, Helvetica, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ---- chrome ---- */
+
+        .sp-titlebar {
+            height: 84px;
+            flex: 0 0 84px;
+            background: var(--sp-chrome);
+            border-bottom: 4px solid var(--sp-red);
+            display: flex;
+            align-items: center;
+            padding: 0 28px;
+            gap: 18px;
+        }
+
+        .sp-title {
+            color: #fff;
+            font-size: 34px;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* The thin vertical rule to the left of the title on every screen
+           except the login screen. */
+        .sp-title.ruled::before {
+            content: '';
+            width: 3px;
+            height: 40px;
+            background: #8a8a8a;
+        }
+
+        .sp-brand { margin-left: auto; display: flex; align-items: center; }
+        .sp-brand img { height: 44px; width: auto; }
+
+        .sp-stage { flex: 1; position: relative; display: flex; padding: 22px; gap: 18px; }
+
+        /* ---- white content panel ---- */
+
+        .sp-panel {
+            flex: 1;
+            background: var(--sp-panel);
+            border: 1px solid var(--sp-panel-edge);
+            padding: 26px 30px;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .sp-prod-head { display: flex; align-items: baseline; gap: 20px; }
+        .sp-prod-name { font-size: 23px; font-weight: 700; flex: 1; min-width: 0; }
+        .sp-prod-menu { font-size: 22px; white-space: nowrap; }
+        .sp-prod-sub { display: flex; align-items: baseline; gap: 20px; margin-top: 12px; font-size: 22px; }
+        .sp-prod-sub .grow { flex: 1; }
+        .sp-prod-sub b { font-weight: 700; }
+        .sp-rule { border-top: 2px solid #b8b8b8; margin: 18px 0 0; }
+
+        .sp-instruction { text-align: center; font-size: 25px; margin-top: 46px; }
+
+        .sp-qty-block {
+            margin: 62px auto 0;
+            display: grid;
+            grid-template-columns: auto 210px;
+            gap: 18px 22px;
+            align-items: center;
+        }
+
+        .sp-qty-block .lbl { font-size: 26px; text-align: right; }
+
+        .sp-field {
+            height: 44px;
+            background: linear-gradient(180deg, #e8e8e8 0%, #c9c9c9 100%);
+            border: 1px solid var(--sp-field-edge);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 24px;
+        }
+
+        .sp-field.disabled { color: #8d8d8d; }
+        .sp-field .sel { background: var(--sp-select); color: #fff; padding: 0 4px; }
+
+        /* ---- red buttons ---- */
+
+        .sp-btn {
+            background: linear-gradient(180deg, #c8102e 0%, #8f0a20 100%);
+            color: #fff;
+            font-weight: 700;
+            font-size: 26px;
+            text-align: center;
+            padding: 16px 34px;
+            border: 1px solid #6e0818;
+            line-height: 1.15;
+            align-self: flex-start;
+        }
+
+        .sp-btn.small { font-size: 22px; padding: 12px 22px; }
+        .sp-panel-actions { margin-top: auto; display: flex; align-items: flex-end; gap: 16px; }
+        .sp-panel-actions.right { justify-content: flex-end; }
+        .sp-panel-actions.center { justify-content: center; }
+
+        /* ---- right-hand button rail ---- */
+
+        .sp-rail { width: 208px; flex: 0 0 208px; display: flex; flex-direction: column; gap: 14px; }
+        .sp-rail .sp-btn { align-self: stretch; }
+        .sp-rail .spacer { flex: 1; }
+
+        /* ---- product result list ---- */
+
+        .sp-find { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .sp-find .lbl { font-size: 22px; }
+        .sp-find .sp-field { flex: 1; height: 40px; }
+
+        .sp-find .x {
+            width: 40px; height: 40px; flex: 0 0 40px;
+            border: 1px solid #b0b0b0;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--sp-red); font-size: 26px; font-weight: 700;
+            background: #fff;
+        }
+
+        .sp-list { flex: 1; display: flex; gap: 10px; min-height: 0; }
+        .sp-list-inner { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+
+        .sp-row {
+            border: 1px solid #b6b6b6;
+            border-radius: 4px;
+            background: #fbfbfb;
+            padding: 7px 12px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex: 0 0 auto;
+        }
+
+        .sp-row.on { border-color: var(--sp-select); box-shadow: inset 0 0 0 1px var(--sp-select); background: #f2f7fd; }
+        .sp-row .thumb { width: 58px; height: 44px; flex: 0 0 58px; display: flex; align-items: center; justify-content: center; }
+        .sp-row .thumb svg { width: 52px; height: 40px; }
+        .sp-row .info { flex: 1; min-width: 0; }
+        .sp-row .nm { font-size: 20px; font-weight: 700; line-height: 1.15; }
+        .sp-row .dl { display: flex; gap: 18px; font-size: 17px; margin-top: 2px; }
+        .sp-row .dl .grow { flex: 1; }
+        .sp-row .dl b { font-weight: 700; }
+        .sp-row .tr { display: flex; flex-direction: column; gap: 4px; flex: 0 0 auto; }
+
+        .sp-pip {
+            width: 24px; height: 24px; border-radius: 50%;
+            color: #fff; font-size: 14px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .sp-pip.t { background: #1a9c4c; }
+        .sp-pip.r { background: #c8102e; }
+
+        .sp-scroll { width: 26px; flex: 0 0 26px; background: #ececec; border: 1px solid #b6b6b6; display: flex; flex-direction: column; }
+        .sp-scroll .arw { height: 26px; background: #dcdcdc; border-bottom: 1px solid #b6b6b6; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #555; }
+        .sp-scroll .arw.last { border-bottom: none; border-top: 1px solid #b6b6b6; margin-top: auto; }
+        .sp-scroll .thumbbar { height: 90px; margin: 4px 3px; background: #b9b9b9; border: 1px solid #9a9a9a; }
+
+        /* ---- category list ---- */
+
+        .sp-cat-title { text-align: center; font-size: 25px; font-weight: 700; margin-bottom: 16px; }
+        .sp-cat-row { padding: 9px 10px; font-size: 23px; display: grid; grid-template-columns: 170px 1fr; }
+        .sp-cat-row.on { background: #cccccc; }
+        .sp-cat-box { border: 1px solid #b6b6b6; height: 390px; overflow: hidden; background: #fff; }
+        .sp-cat-wrap { display: flex; gap: 10px; }
+        .sp-cat-wrap .sp-cat-box { flex: 1; }
+
+        /* ---- take / return action buttons ---- */
+
+        .sp-actions { display: flex; align-items: center; justify-content: center; gap: 46px; margin-top: 70px; }
+        .sp-actions .lbl { font-size: 25px; }
+
+        .sp-knob {
+            width: 108px; height: 108px; border-radius: 50%;
+            background: radial-gradient(circle at 50% 32%, #fdfdfd 0%, #e2e2e2 62%, #c4c4c4 100%);
+            border: 1px solid #a9a9a9;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+            padding-bottom: 16px;
+            font-size: 25px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .sp-knob::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            width: 16px; height: 20px;
+            border-radius: 50% 50% 45% 45%;
+            background: #1a1a1a;
+        }
+
+        .sp-knob::after {
+            content: '';
+            position: absolute;
+            top: 18px;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--sp-red);
+        }
+
+        /* ---- 3D clip, the two bookends ----
+           Not an error state. These are the video segments Storyline plays
+           either side of the Web Object, so they are styled as a film frame
+           rather than a missing-asset panel. */
+
+        .sp-clip {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 42%, #22262e 0%, #12141a 70%, #0b0c10 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 70px;
+            text-align: center;
+            color: #f0f0f0;
+        }
+
+        .sp-clip .pill {
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 1.6px;
+            padding: 8px 22px;
+            border: 1px solid #8b6fc4;
+            color: #c4a2f7;
+            font-weight: 700;
+        }
+
+        .sp-clip .pill.new { border-color: #d19a2e; color: #f0c674; }
+        .sp-clip h4 { font-size: 36px; font-weight: 700; }
+        .sp-clip p { font-size: 22px; color: #b6b6b6; max-width: 700px; line-height: 1.45; }
+
+        .sp-clip .bars { display: flex; gap: 8px; margin-top: 6px; }
+        .sp-clip .bars i { width: 34px; height: 5px; background: #3d4250; border-radius: 3px; }
+        .sp-clip .bars i.on { background: #8b6fc4; }
+
+        /* The handover caption, shown on the first and last Web Object screen. */
+        .handover {
+            flex: 0 0 auto;
+            background: #8b6fc4;
+            color: #fff;
+            font-size: 18px;
+            font-family: Arial, Helvetica, sans-serif;
+            padding: 9px 22px;
+            letter-spacing: 0.4px;
+        }
+
+        /* ---- transport ---- */
+
+        .transport { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+        .progress { width: 100%; height: 5px; background: var(--bg-input); border-radius: 3px; overflow: hidden; }
+        .progress span { display: block; height: 100%; background: var(--accent); width: 0; transition: width 0.2s linear; }
+        .caption { font-size: 0.85rem; color: var(--text-secondary); text-align: center; min-height: 1.6em; }
+
+        /* ---- right column ---- */
+
+        .var-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .var-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        .var-table td:first-child { color: var(--text-secondary); font-family: 'Monaco', 'Consolas', monospace; width: 45%; }
+        .var-table td:last-child { color: var(--accent); font-family: 'Monaco', 'Consolas', monospace; word-break: break-word; }
+
+        .timeline { max-height: 300px; overflow-y: auto; }
+
+        .tl-item {
+            display: flex; gap: 10px; align-items: flex-start;
+            padding: 8px 10px; border-radius: 8px;
+            font-size: 0.82rem; margin-bottom: 4px;
+            cursor: pointer; border: 1px solid transparent;
+        }
+
+        .tl-item:hover { background: var(--bg-input); }
+        .tl-item.on { background: rgba(34, 211, 238, 0.1); border-color: var(--accent); }
+        .tl-item.done { opacity: 0.55; }
+
+        .tl-num {
+            width: 22px; height: 22px; flex: 0 0 22px;
+            border-radius: 50%; background: var(--bg-dark);
+            border: 1px solid var(--border);
+            font-size: 0.7rem;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-secondary);
+        }
+
+        .tl-item.on .tl-num { background: var(--accent); color: #05080f; border-color: var(--accent); }
+        .tl-body { flex: 1; }
+        .tl-body small { display: block; color: var(--text-secondary); font-size: 0.74rem; }
+        .tl-item.clip-step .tl-num { border-color: #8b6fc4; color: #c4a2f7; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 0.9rem; }
+
+        .message { padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; display: none; font-size: 0.9rem; }
+        .message.error { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: var(--danger); display: block; }
+        .message.info { background: rgba(34, 211, 238, 0.12); border: 1px solid var(--accent); color: var(--accent); display: block; }
+
+        .hint { font-size: 0.78rem; color: var(--text-secondary); margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="ti-logo.png" alt="Tooling Intelligence" class="logo-img">
+            <div class="header-subtitle">
+                <h2>Sequence Preview</h2>
+                <p>Plays a saved sequence on a recreation of the device UI</p>
+            </div>
+        </header>
+
+        <nav>
+            <a href="index.html">Configurations</a>
+            <a href="sequences.html">Sequence Builder</a>
+            <a href="player.html" class="active">Preview Player</a>
+        </nav>
+
+        <div id="message" class="message"></div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>Playback</h2>
+
+                <div class="controls">
+                    <div class="field">
+                        <label for="user">User ID</label>
+                        <input type="text" id="user" placeholder="TI_EXAMPLE_1">
+                    </div>
+                    <div class="field">
+                        <label for="mode">Mode</label>
+                        <select id="mode">
+                            <option value="auto">Auto play</option>
+                            <option value="step_through">Step through</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="load">Load</button>
+                </div>
+
+                <div class="stage">
+                    <div class="device-frame" id="frame">
+                        <div class="device" id="device"></div>
+                    </div>
+
+                    <div class="progress"><span id="progress-bar"></span></div>
+                    <div class="caption" id="caption"></div>
+
+                    <div class="transport">
+                        <button class="btn btn-secondary" id="restart" disabled>&#8635; Restart</button>
+                        <button class="btn btn-secondary" id="prev" disabled>&#9664; Back</button>
+                        <button class="btn btn-primary" id="play" disabled>&#9654; Play</button>
+                        <button class="btn btn-secondary" id="next" disabled>Next &#9654;</button>
+                    </div>
+                </div>
+
+                <p class="hint">
+                    Screens are rebuilt at 1024x768 and scaled, so proportions match the SCORM
+                    package. Product details are pulled from the catalogue, not typed per step.
+                    Physical steps show a hatched panel instead of a screen: each one is a 3D
+                    render that does not exist yet.
+                </p>
+            </div>
+
+            <div class="card">
+                <h2>Storyline bridge</h2>
+                <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:12px">
+                    The variables this page would push into Storyline on each advance. This is the
+                    step-index state machine, since Storyline has no loops or arrays.
+                </p>
+                <table class="var-table" id="vars"></table>
+
+                <h3>Timeline</h3>
+                <div class="timeline" id="timeline">
+                    <div class="empty-state">Nothing loaded.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/shared/catalogue.js"></script>
+    <script src="/shared/event-types.js"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        var seq = null;
+        var index = -1;
+        var timer = null;
+        var playing = false;
+
+        var el = {
+            user: document.getElementById('user'),
+            mode: document.getElementById('mode'),
+            load: document.getElementById('load'),
+            frame: document.getElementById('frame'),
+            device: document.getElementById('device'),
+            caption: document.getElementById('caption'),
+            progress: document.getElementById('progress-bar'),
+            play: document.getElementById('play'),
+            next: document.getElementById('next'),
+            prev: document.getElementById('prev'),
+            restart: document.getElementById('restart'),
+            vars: document.getElementById('vars'),
+            timeline: document.getElementById('timeline'),
+            message: document.getElementById('message')
+        };
+
+        // Keep the 1024x768 screen scaled to whatever width the card gives us.
+        function fit() {
+            el.device.style.setProperty('--s', el.frame.clientWidth / 1024);
+        }
+        new ResizeObserver(fit).observe(el.frame);
+        fit();
+
+        // ---- Screen titles, as they appear in the dark title bar ----
+
+        var TITLES = {
+            login_method: 'User Login',
+            login_allocation_code: 'Login Allocation Code',
+            product_allocation_code: 'Product Allocation Code',
+            display_loan_period: 'Loan Period',
+            product_search: 'Select Product',
+            select_product: 'Select Product',
+            select_action: 'Select Product',
+            enter_quantity: 'Take',
+            info_window: 'Information',
+            open_pocket_take: 'Take',
+            handheld_scanner_cradle: 'Handheld Scanner',
+            scale_transaction: 'Scale Location',
+            check_in: 'Return',
+            transaction_confirmation: 'Take',
+            logout: 'Logout'
+        };
+
+        function titleFor(step) {
+            if (step.type === 'product_search' && (step.params || {}).mode === 'category_page') {
+                return 'Product Category';
+            }
+            if (step.type === 'select_action' && (step.params || {}).action === 'return') {
+                return 'Select Product';
+            }
+            if (step.type === 'product_allocation_code' && (step.params || {}).applies_on === 'return') {
+                return 'Product Allocation Code';
+            }
+            return TITLES[step.type] || 'SmartDrawer';
+        }
+
+        // ---- Thumbnails, one neutral line drawing per product type ----
+
+        var THUMBS = {
+            cutting_tool: '<svg viewBox="0 0 52 40" fill="none" stroke="#555" stroke-width="1.6"><path d="M6 20h10M16 12h22l8 8-8 8H16z"/><path d="M20 12v16M26 12v16M32 12v16"/></svg>',
+            hand_tool: '<svg viewBox="0 0 52 40" fill="none" stroke="#555" stroke-width="1.6"><rect x="8" y="14" width="30" height="12" rx="2"/><path d="M38 20h8M12 14v12"/></svg>',
+            fastener: '<svg viewBox="0 0 52 40" fill="none" stroke="#555" stroke-width="1.6"><circle cx="20" cy="20" r="9"/><circle cx="20" cy="20" r="3.5"/><path d="M32 20h14"/></svg>',
+            ppe_item: '<svg viewBox="0 0 52 40" fill="none" stroke="#555" stroke-width="1.6"><path d="M26 8l14 5v10c0 7-7 11-14 13-7-2-14-6-14-13V13z"/></svg>',
+            grinding_disc: '<svg viewBox="0 0 52 40" fill="none" stroke="#555" stroke-width="1.6"><circle cx="26" cy="20" r="13"/><circle cx="26" cy="20" r="4"/></svg>',
+            handheld_scanner: '<svg viewBox="0 0 52 40" fill="none" stroke="#555" stroke-width="1.6"><rect x="16" y="6" width="20" height="22" rx="2"/><path d="M20 30h12v5H20zM20 11h12M20 16h12"/></svg>'
+        };
+
+        function thumb(p) {
+            return THUMBS[p && p.type] || THUMBS.hand_tool;
+        }
+
+        // ---- Chrome ----
+
+        function chrome(step, inner, railButtons) {
+            var rail = railButtons === null ? '' :
+                '<div class="sp-rail">' +
+                    (railButtons || []).map(function (b) {
+                        return '<div class="sp-btn small">' + b + '</div>';
+                    }).join('') +
+                    '<div class="spacer"></div>' +
+                    '<div class="sp-btn small">Admin<br>Menu</div>' +
+                    '<div class="sp-btn small">Logout</div>' +
+                '</div>';
+
+            // Mark the two seams so the architecture is visible in a demo.
+            var caption = '';
+            if (index === 1) {
+                caption = '<div class="handover">Web Object loads here. Everything from now on is HTML in the Web Object.</div>';
+            } else if (step.type === 'logout') {
+                caption = '<div class="handover">Log out hands back to Storyline. The closing 3D clip plays next.</div>';
+            }
+
+            return '' +
+                '<div class="sp-titlebar">' +
+                    '<div class="sp-title ruled">' + esc(titleFor(step)) + '</div>' +
+                    '<div class="sp-brand"><img src="ti-logo.png" alt="Tooling Intelligence"></div>' +
+                '</div>' +
+                '<div class="sp-stage">' +
+                    '<div class="sp-panel">' + inner + '</div>' +
+                    rail +
+                '</div>' + caption;
+        }
+
+        // Product header block, as on the Take and Select Product screens.
+        function productHead(p, showItemCode) {
+            if (!p) return '';
+            return '<div class="sp-prod-head">' +
+                    '<div class="sp-prod-name">' + esc(p.name) + '</div>' +
+                    '<div class="sp-prod-menu">Menu#:' + esc(p.menu) + '</div>' +
+                '</div>' +
+                '<div class="sp-prod-sub">' +
+                    '<div>P/N: <b>' + esc(p.pn) + '</b></div>' +
+                    '<div class="grow"></div>' +
+                    '<div>Unit of Issue: <b>' + esc(p.uoi) + '</b></div>' +
+                '</div>' +
+                (showItemCode ? '<div class="sp-prod-sub" style="margin-top:4px"><div>Item Code:</div></div>' : '') +
+                '<div class="sp-rule"></div>';
+        }
+
+        // ---- Per-event screens ----
+
+        // A sequence that ends with log out has one more FRAME than it has
+        // steps: the closing 3D clip Storyline plays once the Web Object hands
+        // back. It is not a step, so it is not stored and not editable.
+        function endsWithLogout() {
+            return seq && seq.steps.length && seq.steps[seq.steps.length - 1].type === 'logout';
+        }
+
+        function frameCount() {
+            return seq.steps.length + (endsWithLogout() ? 1 : 0);
+        }
+
+        function isClosingFrame(i) {
+            return endsWithLogout() && i === seq.steps.length;
+        }
+
+        function renderStep(i) {
+            if (isClosingFrame(i)) {
+                return clipFrame('3D clip',
+                    'Closing sequence',
+                    'Log out has handed control back to Storyline. The Web Object is unloaded ' +
+                    'and the closing clip plays: the operator leaves with the item.',
+                    false);
+            }
+            var step = seq.steps[i];
+            var type = TIEvents.get(step.type);
+            var t = step.text || {};
+            var p = step.params || {};
+            var product = TIEvents.selectedProductAt(seq.steps, i);
+
+            // The opening 3D clip. Storyline owns this, the Web Object is not
+            // loaded yet.
+            if (type && type.stage === '3d') {
+                var isNew = TIEvents.needsNewClip(step);
+                return clipFrame(
+                    isNew ? '3D clip, not yet filmed' : '3D clip',
+                    'Log in: ' + methodLabel(p.method),
+                    'The clip covers the approach and the login action, ending on a still of ' +
+                    'the device screen. The Web Object loads on the next step.',
+                    isNew);
+            }
+
+            switch (step.type) {
+
+                case 'logout':
+                    return chrome(step,
+                        '<div class="sp-instruction" style="margin-top:120px">' + esc(t.message) + '</div>' +
+                        '<div class="sp-panel-actions center"><div class="sp-btn">Log out</div></div>',
+                        []);
+
+                // ---- code prompts ----
+                case 'login_allocation_code':
+                case 'product_allocation_code': {
+                    var body = (step.type === 'product_allocation_code' ? productHead(product, false) : '') +
+                        '<div class="sp-instruction">' + esc(t.prompt) + '</div>';
+
+                    if (p.input_mode === 'select_from_list') {
+                        body += '<div class="sp-cat-wrap" style="margin-top:26px">' +
+                            '<div class="sp-cat-box" style="height:250px">' +
+                            ['JOB-4471', 'JOB-4472', 'JOB-4480', 'JOB-4491'].map(function (c, k) {
+                                return '<div class="sp-cat-row' + (k === 1 ? ' on' : '') +
+                                    '" style="grid-template-columns:1fr">' + esc(c) + '</div>';
+                            }).join('') + '</div>' + scrollRail() + '</div>';
+                    } else {
+                        body += '<div class="sp-qty-block" style="grid-template-columns:auto 300px;margin-top:56px">' +
+                            '<div class="lbl">Scan code:</div>' +
+                            '<div class="sp-field"><span class="sel">&nbsp;&nbsp;&nbsp;</span></div>' +
+                            '</div>';
+                    }
+
+                    if (t.helper) {
+                        body += '<div class="sp-instruction" style="margin-top:26px;font-size:21px;color:#555">' +
+                            esc(t.helper) + '</div>';
+                    }
+
+                    body += '<div class="sp-panel-actions"><div class="sp-btn">Back</div></div>';
+                    return chrome(step, body, []);
+                }
+
+                // ---- loan period ----
+                case 'display_loan_period':
+                    return chrome(step,
+                        '<div class="sp-instruction" style="margin-top:60px;font-weight:700">' + esc(t.title) + '</div>' +
+                        '<div class="sp-instruction" style="margin-top:22px;font-size:44px">' + esc(t.period) + '</div>' +
+                        '<div class="sp-panel-actions center"><div class="sp-btn">OK</div></div>',
+                        []);
+
+                // ---- search: typed list or category page ----
+                case 'product_search': {
+                    if (p.mode === 'category_page') {
+                        return chrome(step,
+                            '<div class="sp-cat-title">Select a Product Category</div>' +
+                            findRow('') +
+                            '<div class="sp-cat-wrap"><div class="sp-cat-box">' +
+                                TICatalogue.CATEGORIES.map(function (c) {
+                                    return '<div class="sp-cat-row' + (c.id === p.category ? ' on' : '') + '">' +
+                                        '<div>Name:</div><div>' + esc(c.name) + '</div>' +
+                                        '<div>Description:</div><div>' + esc(c.description || '') + '</div>' +
+                                        '</div>';
+                                }).join('') +
+                            '</div>' + scrollRail() + '</div>' +
+                            '<div class="sp-panel-actions center"><div class="sp-btn">Return</div></div>',
+                            []);
+                    }
+                    return chrome(step,
+                        findRow(t.query) + resultList(TICatalogue.search(t.query), null),
+                        ['Transactions', 'Find Elsewhere', 'Special<br>Order', 'Product<br>Category', 'Return to Start']);
+                }
+
+                // ---- the result list with the chosen product highlighted ----
+                case 'select_product': {
+                    var prev = precedingSearch(i);
+                    var pool;
+                    if (prev && prev.params.mode === 'category_page') {
+                        pool = TICatalogue.inCategory(prev.params.category);
+                    } else if (prev) {
+                        pool = TICatalogue.search((prev.text || {}).query);
+                    } else {
+                        pool = TICatalogue.search('');
+                    }
+                    // The chosen row has to be on screen, or the highlight is
+                    // invisible and the step reads as a blank list.
+                    pool = promote(pool, product);
+                    return chrome(step,
+                        findRow(prev && prev.params.mode === 'typed' ? (prev.text || {}).query : '') +
+                        resultList(pool, product && product.id),
+                        ['Transactions', 'Find Elsewhere', 'Special<br>Order', 'Product<br>Category', 'Return to Start']);
+                }
+
+                // ---- take / return knobs ----
+                case 'select_action':
+                    return chrome(step,
+                        productHead(product, true) +
+                        '<div class="sp-actions">' +
+                            '<div class="lbl">Select an action:</div>' +
+                            '<div class="sp-knob"' + (p.action === 'take' ? ' style="outline:3px solid #4a90d9;outline-offset:3px"' : '') + '>Take</div>' +
+                            '<div class="sp-knob"' + (p.action === 'return' ? ' style="outline:3px solid #4a90d9;outline-offset:3px"' : '') + '>Return</div>' +
+                        '</div>' +
+                        (p.control === 'hardware'
+                            ? '<div class="sp-instruction" style="margin-top:40px;font-size:21px;color:#555">' +
+                              'Operator uses the hardware Take/Return button</div>' : '') +
+                        '<div class="sp-panel-actions"><div class="sp-btn">Back</div></div>',
+                        []);
+
+                // ---- the Take screen ----
+                case 'enter_quantity': {
+                    var line = t.prompt && String(t.prompt).trim()
+                        ? t.prompt
+                        : (product ? 'Open location door ' + product.loc + '.' : '');
+                    return chrome(step,
+                        productHead(product, false) +
+                        '<div class="sp-instruction">' + esc(line) + '</div>' +
+                        '<div class="sp-qty-block">' +
+                            '<div class="lbl">Current Quantity:</div>' +
+                            '<div class="sp-field disabled">' + esc(product ? product.qty : '') + '</div>' +
+                            '<div class="lbl">Enter Quantity:</div>' +
+                            '<div class="sp-field"><span class="sel">' + esc(t.quantity) + '</span></div>' +
+                        '</div>' +
+                        '<div class="sp-panel-actions center"><div class="sp-btn">Back</div></div>',
+                        []);
+                }
+
+                case 'check_in':
+                    return chrome(step,
+                        productHead(product, false) +
+                        '<div class="sp-instruction">' + esc(t.prompt) + '</div>' +
+                        '<div class="sp-qty-block">' +
+                            '<div class="lbl">Current Quantity:</div>' +
+                            '<div class="sp-field disabled">' + esc(product ? product.qty : '') + '</div>' +
+                            '<div class="lbl">Return Quantity:</div>' +
+                            '<div class="sp-field"><span class="sel">1</span></div>' +
+                        '</div>' +
+                        '<div class="sp-instruction" style="margin-top:34px;font-size:22px;color:#1a7a3c">' +
+                            esc(t.confirmation) + '</div>' +
+                        '<div class="sp-panel-actions center"><div class="sp-btn">Back</div></div>',
+                        []);
+
+                // ---- information window, drawn as a modal over the panel ----
+                case 'info_window':
+                    return chrome(step,
+                        productHead(product, false) +
+                        '<div style="margin:52px auto 0;width:640px;border:2px solid #8a8a8a;background:#f7f7f7">' +
+                            '<div style="background:#333;color:#fff;padding:12px 18px;font-size:23px;font-weight:700">' +
+                                esc(t.title) + '</div>' +
+                            '<div style="padding:26px 22px;font-size:23px;line-height:1.4">' + esc(t.body) + '</div>' +
+                            '<div style="padding:0 22px 22px;display:flex;justify-content:flex-end">' +
+                                '<div class="sp-btn small">OK</div></div>' +
+                        '</div>',
+                        []);
+
+                // Physical acts are screen states now. The device holds a
+                // waiting screen while the operator reaches in.
+                case 'open_pocket_take': {
+                    var doorLine = t.message && String(t.message).trim()
+                        ? t.message
+                        : (product ? 'Door ' + product.loc + ' is open. Take the item and close the door.'
+                                   : 'Door is open. Take the item and close the door.');
+                    return chrome(step,
+                        productHead(product, false) +
+                        '<div class="sp-instruction">' + esc(doorLine) + '</div>' +
+                        '<div class="sp-instruction" style="margin-top:56px">' +
+                            '<div style="display:inline-block;border:3px solid #1a7a3c;padding:22px 74px;' +
+                            'font-size:30px;font-weight:700;color:#1a7a3c">DOOR OPEN</div></div>' +
+                        '<div class="sp-instruction" style="margin-top:30px;font-size:21px;color:#555">' +
+                            'Waiting for the door to close</div>',
+                        []);
+                }
+
+                case 'handheld_scanner_cradle': {
+                    var cradleLine = t.message && String(t.message).trim() ? t.message
+                        : (p.direction === 'from_cradle'
+                            ? 'Lift the scanner from its cradle.'
+                            : 'Return the scanner to its cradle.');
+                    return chrome(step,
+                        productHead(product, false) +
+                        '<div class="sp-instruction">' + esc(cradleLine) + '</div>' +
+                        '<div class="sp-instruction" style="margin-top:52px">' +
+                            '<div style="display:inline-block;border:3px solid #8a8a8a;padding:20px 56px;' +
+                            'font-size:26px;color:#333">Cradle ' +
+                            (p.direction === 'from_cradle' ? 'released' : 'charging') +
+                            '</div></div>',
+                        []);
+                }
+
+                case 'scale_transaction':
+                    return chrome(step,
+                        productHead(product, false) +
+                        '<div class="sp-instruction">' +
+                            esc(t.message && String(t.message).trim() ? t.message : 'Place the items on the scale.') +
+                        '</div>' +
+                        '<div class="sp-instruction" style="margin-top:44px">' +
+                            '<div style="display:inline-block;background:#1a1a1a;color:#7bf07b;' +
+                            'font-family:Monaco,Consolas,monospace;font-size:46px;padding:18px 54px;' +
+                            'border:3px solid #555">' + esc(t.weight) + '</div></div>' +
+                        '<div class="sp-instruction" style="margin-top:26px;font-size:21px;color:#555">' +
+                            'Scale location, ' + (p.action === 'take' ? 'take' : 'return') + '</div>',
+                        []);
+
+                case 'transaction_confirmation':
+                    return chrome(step,
+                        productHead(product, false) +
+                        '<div class="sp-instruction" style="margin-top:90px;font-size:34px;color:#1a7a3c;font-weight:700">' +
+                            esc(t.message) + '</div>' +
+                        '<div class="sp-panel-actions center"><div class="sp-btn">Return to Start</div></div>',
+                        []);
+
+                default:
+                    return chrome(step,
+                        '<div class="sp-instruction">' + esc(type ? type.label : step.type) + '</div>', []);
+            }
+        }
+
+        // The product_search step this selection follows, if any.
+        function precedingSearch(i) {
+            for (var k = i - 1; k >= 0; k--) {
+                if (seq.steps[k].type === 'product_search') return seq.steps[k];
+            }
+            return null;
+        }
+
+        // Move the chosen product into the visible six without reordering the
+        // rest, so the list still reads as a real result set.
+        function promote(pool, product) {
+            if (!product) return pool;
+            var at = pool.indexOf(product);
+            if (at >= 0 && at < 6) return pool;
+            var rest = pool.filter(function (p) { return p !== product; });
+            return [product].concat(rest);
+        }
+
+        function clipFrame(pill, title, body, isNew) {
+            return '<div class="sp-clip">' +
+                '<span class="pill' + (isNew ? ' new' : '') + '">' + esc(pill) + '</span>' +
+                '<h4>' + esc(title) + '</h4>' +
+                '<p>' + esc(body) + '</p>' +
+                '<div class="bars"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>' +
+                '</div>';
+        }
+
+        var METHOD_LABELS = {
+            rfid: 'RFID badge scan',
+            barcode: 'Barcode scan',
+            typed: 'Typed, no password',
+            typed_password: 'Typed with password',
+            fingerprint: 'Fingerprint'
+        };
+
+        function methodLabel(m) { return METHOD_LABELS[m] || m || ''; }
+
+        function findRow(value) {
+            return '<div class="sp-find">' +
+                '<div class="lbl">FIND:</div>' +
+                '<div class="sp-field">' + esc(value || '') + '</div>' +
+                '<div class="x">&times;</div>' +
+                '</div>';
+        }
+
+        // The scrolling product list. Six rows fit the panel, same as the real
+        // screen, so a search returning fewer than that looks wrong. That is
+        // why the catalogue carries filler.
+        function resultList(products, activeId) {
+            var rows = products.slice(0, 6).map(function (p) {
+                return '<div class="sp-row' + (p.id === activeId ? ' on' : '') + '">' +
+                    '<div class="thumb">' + thumb(p) + '</div>' +
+                    '<div class="info">' +
+                        '<div class="nm">' + esc(p.name) + '</div>' +
+                        '<div class="dl"><div class="grow"></div><div>P/N: <b>' + esc(p.pn) + '</b></div></div>' +
+                        '<div class="dl"><div>Current qty: ' + esc(p.qty) + ' ' + esc(p.uoi) + '</div>' +
+                            '<div class="grow"></div>' +
+                            '<div>Device Type: ' + (p.device === 'smartdrawer' ? 'SmartDrawer' : 'SupplySystem') + '</div></div>' +
+                    '</div>' +
+                    '<div class="tr"><div class="sp-pip t">T</div><div class="sp-pip r">R</div></div>' +
+                    '</div>';
+            }).join('');
+
+            return '<div class="sp-list">' +
+                '<div class="sp-list-inner">' + rows + '</div>' +
+                scrollRail() +
+                '</div>';
+        }
+
+        function scrollRail() {
+            return '<div class="sp-scroll"><div class="arw">&#9650;</div>' +
+                '<div class="thumbbar"></div><div class="arw last">&#9660;</div></div>';
+        }
+
+        // ---- Load ----
+
+        async function load() {
+            var userId = el.user.value.trim();
+            if (!userId) { message('Enter a User ID.', 'error'); return; }
+
+            stop();
+            try {
+                var res = await fetch('/api/sequence/' + encodeURIComponent(userId));
+                if (!res.ok) {
+                    var e = await res.json();
+                    message(e.error || 'Not found', 'error');
+                    return;
+                }
+                seq = await res.json();
+                el.mode.value = seq.playback_mode || 'auto';
+                index = -1;
+                enable(true);
+                renderTimeline();
+                message('Loaded "' + (seq.name || seq.user_id) + '", ' + seq.steps.length + ' steps.', 'info');
+                showStep(0);
+            } catch (err) {
+                message('Network error: ' + err.message, 'error');
+            }
+        }
+
+        // ---- Transport ----
+
+        function dwellFor(step) {
+            if (!step) return 4000;   // the closing clip
+            var d = step.dwell_ms != null && step.dwell_ms !== '' ? Number(step.dwell_ms) : null;
+            return d || Number(seq.default_dwell_ms) || 3000;
+        }
+
+        function play() {
+            if (!seq) return;
+            if (playing) { stop(); return; }
+            if (index >= frameCount() - 1) showStep(0);
+            playing = true;
+            el.play.innerHTML = '&#10073;&#10073; Pause';
+            schedule();
+        }
+
+        function schedule() {
+            clearTimeout(timer);
+            if (!playing) return;
+            timer = setTimeout(function () {
+                if (index >= frameCount() - 1) { stop(); return; }
+                showStep(index + 1);
+                schedule();
+            }, dwellFor(seq.steps[index]));
+        }
+
+        function stop() {
+            playing = false;
+            clearTimeout(timer);
+            el.play.innerHTML = '&#9654; Play';
+        }
+
+        // ---- Show ----
+
+        function showStep(i) {
+            if (!seq || i < 0 || i >= frameCount()) return;
+            index = i;
+            var step = seq.steps[i] || null;
+
+            el.device.innerHTML = renderStep(i);
+            fit();
+
+            el.caption.textContent = step
+                ? 'Step ' + (i + 1) + ' of ' + seq.steps.length + ' — ' +
+                  TIEvents.describe(step) + ' — ' + dwellFor(step) + 'ms'
+                : 'Closing 3D clip — Storyline has control';
+            el.progress.style.width = ((i + 1) / frameCount() * 100) + '%';
+
+            renderVars(step, step ? TIEvents.get(step.type) : null, i);
+            markTimeline();
+        }
+
+        // ---- Storyline variable bridge ----
+
+        function renderVars(step, type, i) {
+            // The closing clip is Storyline's own, so the only variable that
+            // matters there is the stage flag telling it to take over.
+            if (!step) {
+                el.vars.innerHTML = [
+                    ['seq_stage', '3d'],
+                    ['seq_step_index', String(seq.steps.length)],
+                    ['seq_step_count', String(seq.steps.length)],
+                    ['seq_complete', 'true'],
+                    ['seq_webobject_active', 'false']
+                ].map(function (r) {
+                    return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>';
+                }).join('');
+                return;
+            }
+
+            var product = TIEvents.selectedProductAt(seq.steps, i);
+            var stage = TIEvents.stageOf(step);
+
+            var rows = [
+                ['seq_user_id', seq.user_id],
+                // This is the variable Storyline branches on: play video, or
+                // show the Web Object.
+                ['seq_stage', stage],
+                ['seq_webobject_active', stage === 'webobject' ? 'true' : 'false'],
+                ['seq_step_index', String(i + 1)],
+                ['seq_step_count', String(seq.steps.length)],
+                ['seq_step_type', step.type],
+                ['seq_step_dwell', String(dwellFor(step))],
+                ['seq_playback_mode', el.mode.value]
+            ];
+
+            if (stage === '3d') {
+                rows.push(['seq_login_clip', TIEvents.needsNewClip(step) ? 'missing' : 'ready']);
+            }
+            if (type && type.handback) {
+                rows.push(['seq_handback', 'true']);
+            }
+
+            Object.keys(step.params || {}).forEach(function (k) {
+                rows.push(['seq_param_' + k, String(step.params[k])]);
+            });
+            Object.keys(step.text || {}).forEach(function (k) {
+                if (String(step.text[k]).length) rows.push(['seq_text_' + k, String(step.text[k])]);
+            });
+
+            // Product fields are resolved from the catalogue, not stored per
+            // step, so Storyline gets them the same way the real screen does.
+            if (product) {
+                rows.push(['seq_product_name', product.name]);
+                rows.push(['seq_product_pn', product.pn]);
+                rows.push(['seq_product_qty', String(product.qty)]);
+                rows.push(['seq_product_uoi', product.uoi]);
+                rows.push(['seq_product_device', product.device]);
+                rows.push(['seq_product_menu', product.menu]);
+                rows.push(['seq_product_loc', product.loc]);
+            }
+
+            rows.push(['seq_complete', i === seq.steps.length - 1 ? 'true' : 'false']);
+
+            el.vars.innerHTML = rows.map(function (r) {
+                return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>';
+            }).join('');
+        }
+
+        // ---- Timeline ----
+
+        function renderTimeline() {
+            if (!seq || !seq.steps.length) {
+                el.timeline.innerHTML = '<div class="empty-state">Nothing loaded.</div>';
+                return;
+            }
+            var html = seq.steps.map(function (step, i) {
+                var type = TIEvents.get(step.type);
+                var is3d = TIEvents.stageOf(step) === '3d';
+                return '<div class="tl-item' + (is3d ? ' clip-step' : '') + '" data-i="' + i + '">' +
+                    '<span class="tl-num">' + (i + 1) + '</span>' +
+                    '<span class="tl-body">' + esc(type ? type.label : step.type) +
+                    '<small>' + esc(TIEvents.describe(step)) + '</small></span></div>';
+            }).join('');
+
+            if (endsWithLogout()) {
+                html += '<div class="tl-item clip-step" data-i="' + seq.steps.length + '">' +
+                    '<span class="tl-num">&#9654;</span>' +
+                    '<span class="tl-body">Closing 3D clip<small>Storyline, after the handback</small></span></div>';
+            }
+
+            el.timeline.innerHTML = html;
+
+            el.timeline.querySelectorAll('.tl-item').forEach(function (n) {
+                n.addEventListener('click', function () { stop(); showStep(Number(n.dataset.i)); });
+            });
+        }
+
+        function markTimeline() {
+            el.timeline.querySelectorAll('.tl-item').forEach(function (n) {
+                var i = Number(n.dataset.i);
+                n.classList.toggle('on', i === index);
+                n.classList.toggle('done', i < index);
+            });
+            var active = el.timeline.querySelector('.tl-item.on');
+            if (active) active.scrollIntoView({ block: 'nearest' });
+        }
+
+        // ---- Utilities ----
+
+        function enable(on) {
+            [el.play, el.next, el.prev, el.restart].forEach(function (b) { b.disabled = !on; });
+        }
+
+        function message(text, kind) {
+            el.message.textContent = text;
+            el.message.className = 'message ' + kind;
+            setTimeout(function () { el.message.className = 'message'; }, 5000);
+        }
+
+        function esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // ---- Wiring ----
+
+        el.load.addEventListener('click', load);
+        el.user.addEventListener('keydown', function (e) { if (e.key === 'Enter') load(); });
+        el.play.addEventListener('click', play);
+        el.next.addEventListener('click', function () { stop(); showStep(index + 1); });
+        el.prev.addEventListener('click', function () { stop(); showStep(index - 1); });
+        el.restart.addEventListener('click', function () { stop(); showStep(0); });
+        el.mode.addEventListener('change', function () { if (el.mode.value === 'step_through') stop(); });
+
+        document.addEventListener('keydown', function (e) {
+            if (!seq) return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+            if (e.key === 'ArrowRight') { stop(); showStep(index + 1); }
+            if (e.key === 'ArrowLeft') { stop(); showStep(index - 1); }
+            if (e.key === ' ') { e.preventDefault(); play(); }
+        });
+
+        var preset = new URLSearchParams(location.search).get('user');
+        if (preset) { el.user.value = preset; load(); }
+    })();
+    </script>
+</body>
+</html>
