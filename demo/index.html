@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tooling Interactive Customised Product Experience</title>
   <link rel="stylesheet" href="css/demo.css">
+  <link rel="stylesheet" href="css/screens.css">
 </head>
 <body>
   <div class="viewport">
@@ -43,8 +44,9 @@
         </form>
       </section>
 
-      <!-- The scene: environment clip > End still pans onto the product > zoom clip > HTML device screen.
-           All layers live on one slide so every hand-off is a layer change, never a slide change. -->
+      <!-- The scene: environment clip > End still pans onto the product > zoom clip > HTML device screen
+           > the sequence's screens. All layers live on one slide so every hand-off is a layer change,
+           never a slide change. -->
       <section class="slide slide-clip" id="slide-scene" aria-label="Environment" hidden>
         <div class="media" id="env-media"></div>
         <div class="frame1080 pan-layer" id="pan-layer"><img class="pan-img" id="pan-img" alt=""></div>
@@ -54,12 +56,25 @@
           <div class="device-welcome" id="device-welcome"></div>
           <div class="device-field" id="device-field"><span id="device-field-text"></span><span class="device-caret" id="device-caret"></span></div>
           <div class="device-enter" id="device-enter"></div>
+          <div class="screen" id="screen" hidden></div>
+          <!-- Shows what the automatic screens type into, pick and press. Tip at 0,0. -->
+          <div class="cursor" id="cursor" aria-hidden="true">
+            <svg viewBox="-2 -2 24 34"><path d="M0 0v26.5l6.1-5.7 4.1 9.4 4.2-1.8-4.1-9.3h8.4z" fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </div>
         </div>
+        <!-- Step-through mode only -->
+        <button class="btn btn-submit btn-next" id="step-next" type="button" hidden>Next</button>
       </section>
 
       <!-- Physical login action, for badge and barcode logins -->
       <section class="slide slide-clip" id="slide-login-action" aria-label="Login" hidden>
         <div class="media" id="login-media"></div>
+      </section>
+
+      <!-- Take and return clips, mid-sequence. One shows at a time. -->
+      <section class="slide slide-clip" id="slide-action" aria-label="Take or return" hidden>
+        <div class="media" id="take-media"></div>
+        <div class="media" id="return-media" hidden></div>
       </section>
 
       <!-- Stub: where the next screens will go -->
@@ -76,9 +91,26 @@
     </main>
   </div>
 
+  <!-- Darkens the HTML screens the way the render darkens the device screen. See css/screens.css. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="render-tone" color-interpolation-filters="sRGB">
+      <feColorMatrix class="tone-saturation" type="saturate" values="1"/>
+      <feComponentTransfer>
+        <feFuncR class="tone-gamma" type="gamma" exponent="1"/><feFuncG class="tone-gamma" type="gamma" exponent="1"/><feFuncB class="tone-gamma" type="gamma" exponent="1"/>
+      </feComponentTransfer>
+    </filter>
+  </svg>
+
   <script src="js/scorm.js"></script>
   <script src="js/media.js"></script>
   <script src="data/configs.js"></script>
+  <script src="data/sequences.js"></script>
+  <!-- The CMS's own catalogue, event types and rules, so each is defined once.
+       build-scorm.py packs them into shared/ and rewrites these paths. -->
+  <script src="../shared/catalogue.js"></script>
+  <script src="../shared/event-types.js"></script>
+  <script src="../shared/sequence-validator.js"></script>
+  <script src="js/screens.js"></script>
   <script src="js/demo.js"></script>
 </body>
 </html>

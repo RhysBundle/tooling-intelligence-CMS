@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <title>Screen check</title>
+  <!--
+    Lays an HTML device screen over the phase 1 artwork it was built from.
+    "1024" shows the screen at the artwork's own size, so the two should line
+    up; "Widened" shows it as the demo does. Not part of the demo or the SCORM
+    package. Open from disk, or serve the 2305 folder so the artwork path works.
+  -->
+  <link rel="stylesheet" href="../css/demo.css">
+  <link rel="stylesheet" href="../css/screens.css">
+  <style>
+    html, body { overflow: auto; background: #222; color: #ddd; font: 14px/1.4 'Segoe UI', Arial, sans-serif; }
+    body { margin: 0; padding: 12px; }
+    .bar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+    .bar label { display: flex; gap: 6px; align-items: center; }
+    .box { position: relative; overflow: hidden; background: #000; }
+    .box img.art, .box .layer { position: absolute; left: 0; top: 0; }
+    .layer .scr { position: absolute; }
+    .box.diff .layer { mix-blend-mode: difference; }
+    .box.art-only .layer { display: none; }
+    .box.scr-only img.art { display: none; }
+    .box.half .layer { opacity: .5; }
+    #note { color: #9a9a9a; }
+    /* ?bare=1: the screen alone at 0,0, for a headless screenshot */
+    body.bare { padding: 0; }
+    body.bare .bar { display: none; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <label>Screen <select id="case"></select></label>
+    <label>View
+      <select id="view">
+        <option value="diff">Difference (black = match)</option>
+        <option value="half">Half and half</option>
+        <option value="scr-only">Screen only</option>
+        <option value="art-only">Artwork only</option>
+      </select>
+    </label>
+    <label>Size
+      <select id="size">
+        <option value="1024">1024, against the artwork</option>
+        <option value="wide">Widened, as in the demo</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="pick"> Show picks</label>
+    <label><input type="checkbox" id="tone"> Render tone</label>
+    <span id="note"></span>
+  </div>
+  <div class="box" id="box"><img class="art" id="art" alt=""><div class="layer screen" id="layer"></div></div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <!-- Same values as login_screen.smartdrawer.tone in js/media.js -->
+    <filter id="render-tone" color-interpolation-filters="sRGB">
+      <feColorMatrix type="saturate" values="0.7"/>
+      <feComponentTransfer>
+        <feFuncR type="gamma" exponent="2.2"/><feFuncG type="gamma" exponent="2.2"/><feFuncB type="gamma" exponent="2.2"/>
+      </feComponentTransfer>
+    </filter>
+  </svg>
+
+  <script src="../../shared/catalogue.js"></script>
+  <script src="../../shared/event-types.js"></script>
+  <script src="../js/screens.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    var ART = '../../../GDrive-example/2305_Product Demo_Screen Artwork/';
+    // The artwork's own product, where it differs from the catalogue, so the
+    // check is about layout rather than data.
+    var M10 = { id: 'm10_art', name: 'M10 x 3 Screw Plug Gauge', pn: 'INSP.', uoi: 'EA', qty: 1, menu: '', loc: 'A-C002', type: 'hand_tool', device: 'smartdrawer' };
+    var M10_100 = Object.assign({}, M10, { pn: 'INSP-100' });
+
+    var CASES = {
+      list: {
+        label: 'Select Product list (08_Search_4)', art: '08_SmartDrawer_Search/08_Search_4.png',
+        step: { type: 'product_search', params: { mode: 'typed' }, text: { query: '' } }
+      },
+      typed: {
+        label: 'Search typed (05_CheckOut_6), FIND and row 1 only', art: '05_SmartDrawer_Checkout/05_CheckOut_6.png',
+        step: { type: 'product_search', params: { mode: 'typed' }, text: { query: 'm10' } }
+      },
+      action: {
+        label: 'Take or return (05_CheckOut_7)', art: '05_SmartDrawer_Checkout/05_CheckOut_7.png',
+        step: { type: 'select_action', params: { action: 'take', control: 'onscreen' } }, product: M10
+      },
+      quantity: {
+        label: 'Take, quantity (08_Search_7)', art: '08_SmartDrawer_Search/08_Search_7.png',
+        step: { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' } }, product: M10_100
+      },
+      alloc: {
+        label: 'Login allocation code (08_Search_3A)', art: '08_SmartDrawer_Search/08_Search_3A.png',
+        step: { type: 'login_allocation_code', params: { input_mode: 'select_from_list' }, text: { prompt: 'Select Work Area' } }
+      },
+      category: {
+        label: 'Product Category (08_Search_5B)', art: '08_SmartDrawer_Search/08_Search_5B.png',
+        step: { type: 'product_search', params: { mode: 'category_page', category: 'machine_tools' }, text: { query: '' } }
+      },
+      dialog: {
+        label: 'Message box, loan period (05_CheckOut_9)', art: '05_SmartDrawer_Checkout/05_CheckOut_9.png',
+        step: { type: 'display_loan_period', params: {}, text: { title: 'Loan period', period: '7 days' } }
+      },
+      keyboard: {
+        label: 'Keyboard, search (05_CheckOut_5B)', art: '05_SmartDrawer_Checkout/05_CheckOut_5B.png',
+        kbd: { kind: 'text', label: '', text: 'm1' }
+      },
+      numpad: {
+        label: 'Number pad (09_TakeButton_7; its 1 is selected)', art: '09_SmartDrawer_TakeButtonPress/09_TakeButton_7.png',
+        kbd: { kind: 'num', label: 'Enter Quantity:', text: '1' }
+      },
+      instruction: {
+        label: 'Instruction, as the scanner screen (05_CheckOut_8; title differs)', art: '05_SmartDrawer_Checkout/05_CheckOut_8.png',
+        step: { type: 'handheld_scanner_cradle', params: { direction: 'from_cradle' }, text: { message: 'Please, go to location A-A001-001, open door and get item with serial number 103.' } }, product: M10
+      }
+    };
+
+    TIScreens.base = '../';
+    var el = {
+      kase: document.getElementById('case'), view: document.getElementById('view'), size: document.getElementById('size'),
+      pick: document.getElementById('pick'), tone: document.getElementById('tone'),
+      box: document.getElementById('box'), art: document.getElementById('art'), layer: document.getElementById('layer'),
+      note: document.getElementById('note')
+    };
+    Object.keys(CASES).forEach(function (k) {
+      var o = document.createElement('option'); o.value = k; o.textContent = CASES[k].label; el.kase.appendChild(o);
+    });
+
+    var q = new URLSearchParams(location.search);
+    if (q.get('case')) el.kase.value = q.get('case');
+    if (q.get('view')) el.view.value = q.get('view');
+    if (q.get('size')) el.size.value = q.get('size');
+    if (q.get('pick')) el.pick.checked = true;
+    if (q.get('tone')) el.tone.checked = true;
+    if (q.get('bare')) { document.body.classList.add('bare'); el.view.value = 'scr-only'; }
+
+    function render() {
+      var c = CASES[el.kase.value];
+      var wide = el.size.value === 'wide';
+      if (c.kbd) {
+        el.layer.innerHTML = TIScreens.keyboard(c.kbd.kind, c.kbd.label);
+        el.layer.querySelector('.kbd-out').textContent = c.kbd.text;
+      } else {
+        el.layer.innerHTML = TIScreens.build(c.step, { steps: [c.step], index: 0, product: c.product });
+      }
+      // A step can be two screens, before and after a tap
+      el.layer.querySelectorAll('.scr').forEach(function (scr) {
+        scr.style.setProperty('--scr-w', wide ? '1365.333px' : '1024px');
+        scr.style.setProperty('--scr-s', '1');
+      });
+      TIScreens.settle(el.layer);
+      if (!el.pick.checked) el.layer.querySelectorAll('.is-picked').forEach(function (n) { n.classList.remove('is-picked'); });
+      el.layer.classList.toggle('is-toned', el.tone.checked);
+      el.art.src = ART + c.art;
+      el.box.style.width = (wide ? 1366 : 1024) + 'px';
+      el.box.style.height = '768px';
+      el.box.className = 'box ' + (wide ? 'scr-only' : el.view.value);
+      el.note.textContent = wide ? 'Widened has no artwork to compare with.' : '';
+    }
+    [el.kase, el.view, el.size, el.pick, el.tone].forEach(function (n) { n.addEventListener('change', render); });
+    render();
+  })();
+  </script>
+</body>
+</html>

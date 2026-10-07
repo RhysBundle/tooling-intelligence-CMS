@@ -170,6 +170,40 @@ body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -we
 .device-enter { position: absolute; left: 1552px; top: 792px; width: 253px; height: 103px; border-radius: 2px; transition: background .12s ease; }
 .device-enter.is-pressed { background: rgba(255,255,255,.22); }
 
+/* The cursor on the automatic screens. demo.js sets its position, in the
+   device layer's px, and --move-ms for each move. It sits outside .screen,
+   so the render tone does not touch it. The ring is the click. */
+.cursor {
+  position: absolute; left: 0; top: 0; z-index: 7; pointer-events: none; opacity: 0;
+  transition: transform var(--move-ms, 0ms) cubic-bezier(.45, 0, .2, 1), opacity .25s linear; /* CURSOR_FADE_MS */
+  will-change: transform;
+}
+.cursor.is-shown { opacity: 1; }
+.cursor svg {
+  position: absolute; left: -3px; top: -3px; width: 36px; height: 51px;
+  transform-origin: 3px 3px; filter: drop-shadow(1px 3px 3px rgba(0, 0, 0, .45));
+}
+/* Blue with a white edge, so it shows on the white panel and the red buttons */
+.cursor::before {
+  content: ''; position: absolute; left: -40px; top: -40px; width: 80px; height: 80px;
+  box-sizing: border-box; border: 6px solid #4a90d9; border-radius: 50%; opacity: 0;
+  background: rgba(74, 144, 217, .25);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .85), inset 0 0 0 2px rgba(255, 255, 255, .85);
+}
+.cursor.is-clicking svg { animation: cursor-press .22s ease-out; }
+.cursor.is-clicking::before { animation: cursor-ring .6s ease-out; }
+@keyframes cursor-press { 40% { transform: scale(.85); } }
+@keyframes cursor-ring {
+  from { transform: scale(.25); opacity: 1; }
+  60% { opacity: .85; }
+  to { transform: scale(1); opacity: 0; }
+}
+
+/* Step-through mode: Next sits centred in the device's title bar, the one
+   place that is empty on every screen. */
+.btn-next { top: 14px; width: 150px; height: 44px; border-radius: 22px; font-size: 18px; z-index: 8; }
+.btn-next[hidden] { display: none; }
+
 /* ---------- Stub: next ---------- */
 .slide-next { background: radial-gradient(ellipse 60% 70% at 70% 30%, #1d4f86, #0b1a2e 55%, #05080e); }
 .next-panel { position: absolute; left: 60px; top: 150px; width: 640px; }

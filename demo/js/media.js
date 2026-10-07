@@ -58,23 +58,65 @@ window.TI_MEDIA = {
     supplysystem: 'smartdrawer'
   },
 
-  // Zoom from the product onto its screen, chosen by config.solution.
+  // Zoom from the product onto its screen, chosen by config.solution. Only
+  // used where there is no zoom_login clip for the login type.
   // Ends on the device login screen, which the HTML screen then takes over.
   zoom: {
     smartdrawer:  { label: 'SmartDrawer zoom to screen',  video: 'assets/video/zoom-smartdrawer.mp4',  poster: 'assets/img/zoom-smartdrawer-start.jpg' },
     supplysystem: { label: 'SupplySystem zoom to screen', video: 'assets/video/zoom-supplysystem.mp4', poster: null }
   },
 
-  // The stills the HTML login screen sits on. 'frame' is the zoom clip's
-  // last frame. 'clean' is the same frame with the welcome text removed, used
-  // when a customer has their own welcome message.
-  login_screen: {
-    smartdrawer: { frame: 'assets/img/zoom-smartdrawer-end.jpg', clean: 'assets/img/login-smartdrawer-clean.jpg' }
+  // The zoom and the login in one clip, by product and config.login_type.
+  // Where there is one, it replaces the zoom, the HTML login screen and the
+  // login clip, and the sequence starts straight after it. Each ends on the
+  // same frame as the zoom (login_screen 'frame' below), so the sequence's
+  // screens sit over it exactly. ROUGH renders from
+  // GDrive-example/Videos/ActionVideos/SmartDrawer; the UserIDPassword file
+  // is a copy of UserID, so both typed logins use one clip.
+  zoom_login: {
+    smartdrawer: {
+      barcode:             { label: 'SmartDrawer zoom and barcode login', video: 'assets/video/zoom-login-smartdrawer-barcode.mp4', poster: 'assets/img/zoom-login-smartdrawer-barcode-start.jpg' },
+      rfid:                { label: 'SmartDrawer zoom and RFID login',    video: 'assets/video/zoom-login-smartdrawer-rfid.mp4',    poster: 'assets/img/zoom-login-smartdrawer-rfid-start.jpg' },
+      login_no_password:   { label: 'SmartDrawer zoom and typed login',   video: 'assets/video/zoom-login-smartdrawer-userid.mp4',  poster: 'assets/img/zoom-login-smartdrawer-userid-start.jpg' },
+      login_with_password: { label: 'SmartDrawer zoom and typed login',   video: 'assets/video/zoom-login-smartdrawer-userid.mp4',  poster: 'assets/img/zoom-login-smartdrawer-userid-start.jpg' }
+    }
   },
 
-  // Physical login actions, for badge and barcode logins. Still needed.
+  // The stills the HTML login screen sits on. 'frame' is the zoom clip's
+  // last frame. 'clean' is the same frame with the welcome text removed, used
+  // when a customer has their own welcome message, and for the log out screen.
+  // 'tone' is how the render changes the device screen's colours, and the
+  // HTML screens after login get the same: saturation first, then a gamma
+  // curve. Fitted to the placeholder zoom's last frame against the login
+  // artwork (greys and the Enter button's reds, to within a few levels), so
+  // fit it again when the real zoom lands. null turns it off.
+  login_screen: {
+    smartdrawer: {
+      frame: 'assets/img/zoom-smartdrawer-end.jpg', clean: 'assets/img/login-smartdrawer-clean.jpg',
+      tone: { saturation: 0.7, gamma: 2.2 }
+    }
+  },
+
+  // Physical login actions, for badge and barcode logins. Only used where
+  // there is no zoom_login clip for the login type, so not for SmartDrawer.
   login_action: {
     rfid:    { label: 'RFID badge tap', video: 'assets/video/login-rfid.mp4',    poster: null },
     barcode: { label: 'Barcode scan',   video: 'assets/video/login-barcode.mp4', poster: null }
+  },
+
+  // The item being taken out or put back, played mid-sequence (see
+  // actionClipAfter in demo.js). Chosen by config.solution itself, not the
+  // stand-in, because both products have their own. From
+  // GDrive-example/Videos/ActionVideos/Adjusted: *TakeOut is take,
+  // *CheckIn is return.
+  action: {
+    take: {
+      smartdrawer:  { label: 'SmartDrawer take',  video: 'assets/video/take-smartdrawer.mp4',  poster: 'assets/img/take-smartdrawer-start.jpg' },
+      supplysystem: { label: 'SupplySystem take', video: 'assets/video/take-supplysystem.mp4', poster: 'assets/img/take-supplysystem-start.jpg' }
+    },
+    'return': {
+      smartdrawer:  { label: 'SmartDrawer return',  video: 'assets/video/return-smartdrawer.mp4',  poster: 'assets/img/return-smartdrawer-start.jpg' },
+      supplysystem: { label: 'SupplySystem return', video: 'assets/video/return-supplysystem.mp4', poster: 'assets/img/return-supplysystem-start.jpg' }
+    }
   }
 };

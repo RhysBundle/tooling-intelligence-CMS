@@ -3,8 +3,11 @@
  *
  * Flow so far:
  *   title > user ID > environment clip > End frame slides across to the product
- *   > zoom to screen > device login screen
- *   > (badge and barcode only) physical login clip > stub
+ *   > the zoom and login clip for the login type, where there is one;
+ *     otherwise zoom to screen > device login screen > (badge and barcode
+ *     only) physical login clip
+ *   > the user's sequence, one device screen per step, with the take or
+ *     return clip each time an item is taken out or put back > stub
  *
  * Classic scripts only (no modules), so it runs from file:// and in an LMS.
  */
@@ -13,6 +16,8 @@
 
   var MEDIA = window.TI_MEDIA || {};
   var CONFIGS = window.TI_CONFIGS || [];
+  var SEQUENCES = window.TI_SEQUENCES || {};
+  var PARAMS = new URLSearchParams(window.location.search);
 
   var PLACEHOLDER_SECONDS = 4;   // a missing clip continues after this
   var LOAD_TIMEOUT_MS = 12000;   // a clip that never loads is treated as missing
@@ -23,7 +28,28 @@
   var SLIDE_MS = 1500;           // slide image moves across to the product
   var SETTLE_MS = 200;           // pause on the product before the zoom
   var ZOOM_FADE_MS = 500;        // slide image crossfades to the zoom's first frame
-  var TYPE_DELAY_MS = 110;       // per character, typed logins
+  var TYPE_DELAY_MS = 110;       // per character, typed logins and typed screen text
+  // The sequence. A step's dwell (from the CMS) is the hold after these.
+  var READ_MS = 500;             // a new screen shows before anything is typed into it
+  var AFTER_TYPE_MS = 400;       // typed text shows before the results come up
+  var PICK_MS = 600;             // a screen shows before its row or knob is picked
+  var AUTO_MS = 1200;            // a scan, or the scale settling, takes this long
+  var PRESS_MS = 250;            // a button press shows for this long
+  var NEXT_GUARD_MS = 250;       // step-through ignores a second Next this soon
+  var LANDED_MS = 600;           // a zoom and login clip's last frame holds before the sequence
+  // The cursor. A move takes longer the further it goes, within these limits.
+  var MOVE_MIN_MS = 350;
+  var MOVE_MAX_MS = 900;
+  var MOVE_MS_PER_PX = 0.4;      // device px, so a move across the panel is ~800ms
+  var CURSOR_FADE_MS = 250;      // matches .cursor in demo.css
+  var CURSOR_REST = { x: 1100, y: 880 }; // where it first shows, low on the panel
+  // The on-screen keyboard. Key to key moves are quicker than the cursor's
+  // other moves, as a typist's are.
+  var KEY_MOVE_MIN_MS = 160;
+  var KEY_MOVE_MAX_MS = 420;
+  var KEY_MS_PER_PX = 0.25;
+  var KEY_PRESS_MS = 150;        // a key shows red for this long
+  var KEYBOARD_READ_MS = 400;    // the keyboard shows before the first key
 
   var LABELS = {
     location: {
@@ -37,7 +63,7 @@
     }
   };
 
-  var state = { slide: 'slide-title', config: null, run: 0, busy: false };
+  var state = { slide: 'slide-title', config: null, run: 0, busy: false, sequence: null, mode: 'auto', onNext: null };
   var slots = {};
 
   /* ---------- Stage scaling ---------- */
@@ -209,6 +235,13 @@
   var panLayer = document.getElementById('pan-layer');
   var panImg = document.getElementById('pan-img');
   var zoomMedia = document.getElementById('zoom-media');
+  var takeMedia = document.getElementById('take-media');
+  var returnMedia = document.getElementById('return-media');
+  var screenEl = document.getElementById('screen');
+  var stepNext = document.getElementById('step-next');
+  var cursor = document.getElementById('cursor');
+  var toneSaturation = document.querySelector('#render-tone .tone-saturation');
+  var toneGamma = document.querySelectorAll('#render-tone .tone-gamma');
 
   // Puts the slide image back where its End frame covers the screen exactly,
   // matching the video's last frame. ext is the extension to the left.
@@ -232,7 +265,16 @@
     var sol = (MEDIA.stand_in || {})[config.solution] || config.solution;
     state.mediaSolution = sol;
     slots.env = createSlot(document.getElementById('env-media'), env, 'env');
-    slots.zoom = createSlot(zoomMedia, (MEDIA.zoom || {})[sol], 'zoom');
+    // A clip that zooms in and logs in, where one exists for this login
+    // type, plays in the zoom's place. See zoom_login in media.js.
+    var zoomLogin = ((MEDIA.zoom_login || {})[sol] || {})[config.login_type];
+    state.zoomLogin = !!zoomLogin;
+    slots.zoom = createSlot(zoomMedia, zoomLogin || (MEDIA.zoom || {})[sol], 'zoom');
+    // Loaded now so they are ready mid-sequence. Each product has its own,
+    // so these skip the stand-in.
+    var action = MEDIA.action || {};
+    slots.take = createSlot(takeMedia, (action.take || {})[config.solution], 'take');
+    slots['return'] = createSlot(returnMedia, (action['return'] || {})[config.solution], 'return');
 
     resetPan(env.ext);
     state.slideBy = (env.slide_by || {})[sol];
@@ -251,9 +293,10 @@
     field.classList.remove('is-typing');
     // With no custom welcome message, the clip's own last frame is used, so
     // the cut from video to HTML is invisible. A custom message uses the
-    // clean still with the text set in HTML.
+    // clean still with the text set in HTML. A zoom and login clip ends on
+    // that same frame, so it always gets the frame.
     if (screen) {
-      if (config.welcome_message) {
+      if (config.welcome_message && !state.zoomLogin) {
         plate.src = screen.clean;
         welcome.textContent = config.welcome_message;
       } else {
@@ -262,6 +305,27 @@
       }
     }
     state.hasScreen = !!screen;
+
+    // The sequence that plays after login. ?mode=step or ?mode=auto overrides
+    // the sequence's own playback mode, ?tone=off turns the render tone off
+    // and ?cursor=off the cursor, ?keyboard=off the on-screen keyboard, all
+    // for testing.
+    state.sequence = findSequence(config.user_id);
+    state.cursorOn = PARAMS.get('cursor') !== 'off';
+    state.keyboardOn = PARAMS.get('keyboard') !== 'off';
+    var mode = PARAMS.get('mode');
+    state.mode = mode === 'step' || mode === 'step_through' ? 'step_through'
+      : mode === 'auto' ? 'auto'
+      : (state.sequence && state.sequence.playback_mode) || 'auto';
+    clearScreen();
+    setTone(PARAMS.get('tone') === 'off' ? null : screen && screen.tone);
+  }
+
+  // The render's colour change, applied to the HTML screens. See media.js.
+  function setTone(tone) {
+    toneSaturation.setAttribute('values', tone ? tone.saturation : 1);
+    toneGamma.forEach(function (f) { f.setAttribute('exponent', tone ? tone.gamma : 1); });
+    screenEl.classList.toggle('is-toned', !!tone);
   }
 
   function begin() {
@@ -299,21 +363,20 @@
       return;
     }
     device.hidden = false;
+    // The clip has logged in already, so the sequence starts.
+    if (state.zoomLogin) { later(LANDED_MS, function () { afterLogin(false); }); return; }
     later(900, login);
   }
 
   function login() {
     var type = state.config.login_type;
     if (type === 'login_no_password' || type === 'login_with_password') {
-      typeInto(String(state.config.user_id), function () {
+      typeOnScreen(field, fieldText, field, String(state.config.user_id), 'text', 'User ID', function () {
         later(400, function () {
-          enterBtn.classList.add('is-pressed');
-          later(250, function () {
-            enterBtn.classList.remove('is-pressed');
-            later(500, function () {
-              showNext(type === 'login_with_password'
-                ? 'The password screen is the next part to build.'
-                : 'The screens after login are the next part to build.');
+          moveTo(enterBtn, function () {
+            press(enterBtn, function () {
+              // No password screen yet, so a password login goes straight on.
+              later(500, function () { afterLogin(false); });
             });
           });
         });
@@ -325,19 +388,383 @@
       slots.login = createSlot(document.getElementById('login-media'), (MEDIA.login_action || {})[type], 'login');
       goTo('slide-login-action');
       later(FADE_MS, function () {
-        playClip(slots.login, function () { showNext('The screens after login are the next part to build.'); });
+        playClip(slots.login, function () { afterLogin(true); });
       });
     });
   }
 
-  function typeInto(text, done) {
-    field.classList.add('is-typing');
+  // Types text into el one character at a time. caret gets is-typing while it
+  // runs, which shows a caret.
+  function typeText(el, text, caret, done) {
+    caret.classList.add('is-typing');
     var i = 0;
     (function step() {
-      if (i >= text.length) { field.classList.remove('is-typing'); done(); return; }
-      fieldText.textContent += text.charAt(i++);
+      if (i >= text.length) { caret.classList.remove('is-typing'); done(); return; }
+      el.textContent += text.charAt(i++);
       later(TYPE_DELAY_MS, step);
     })();
+  }
+
+  /* ---------- The sequence ----------
+   * Each step: its screen cuts in, its arrival plays (typing, then the row or
+   * knob it picks), it holds for its dwell or until Next, then its exit plays
+   * (the press that leads on) and the next step cuts in. The screens and what
+   * moves on them are in screens.js.
+   *
+   * The login was the config's, so the sequence's own log in step is skipped.
+   * If the two name different login methods, the config wins.
+   *
+   * Each time an item is taken out or put back, the take or return clip plays
+   * on its own slide, then the next step comes back on the device. See
+   * actionClipAfter for when.
+   */
+  function afterLogin(fromClip) {
+    var seq = state.sequence;
+    if (!seq) { showNext('This user ID has no sequence yet.'); return; }
+    var check = window.TIValidator ? window.TIValidator.validate(seq) : { valid: true, errors: [] };
+    if (!check.valid) {
+      showNext("This user ID's sequence breaks the CMS rules, so it was not played. " + check.errors[0].message);
+      return;
+    }
+    var first = seq.steps[0] && seq.steps[0].type === 'login_method' ? 1 : 0;
+    runStep(first, fromClip);
+  }
+
+  // viaSlide: coming back from the login clip's slide, so the screen is set
+  // up first and the slide fades back to it.
+  function runStep(i, viaSlide) {
+    var steps = state.sequence.steps;
+    if (i >= steps.length) { showNext('End of the sequence.'); return; }
+    var step = steps[i];
+    state.stepIndex = i;
+
+    if (step.type === 'logout') { logout(i, viaSlide); return; }
+    if (DOOR_STEPS[step.type]) { playAction(DOOR_STEPS[step.type], i); return; }
+
+    screenEl.innerHTML = window.TIScreens.build(step, { steps: steps, index: i });
+    screenEl.hidden = false;
+    if (viaSlide) {
+      goTo('slide-scene');
+      later(FADE_MS, function () { arrive(i); });
+    } else {
+      arrive(i);
+    }
+  }
+
+  // In order: the cursor presses anything tapped first (Product Category),
+  // clicks into each field and types, or the device fills the field itself
+  // (a scan, a scale reading); then the screen moves on to its results, and
+  // the cursor comes to rest on the row or knob it picks. The click on that
+  // comes with the press on the way out.
+  function arrive(i) {
+    var taps = shown('[data-tap]');
+    var typed = shown('[data-type]');
+    function tap() {
+      var el = taps.shift();
+      if (!el) { type(); return; }
+      moveTo(el, function () { press(el, tap); });
+    }
+    function type() {
+      var el = typed.shift();
+      if (!el) { results(); return; }
+      var text = el.getAttribute('data-type');
+      if (el.hasAttribute('data-auto')) {
+        later(AUTO_MS, function () { el.textContent = text; later(AFTER_TYPE_MS, type); });
+        return;
+      }
+      typeOnScreen(el.closest('.scr-field') || el, el, el, text, el.getAttribute('data-kbd') || 'text', el.getAttribute('data-kbd-label') || '', function () {
+        el.classList.add('is-selected');
+        later(AFTER_TYPE_MS, type);
+      });
+    }
+    function results() {
+      window.TIScreens.swap(screenEl);
+      var picks = shown('[data-pick]');
+      if (!picks.length) { hold(i); return; }
+      later(PICK_MS, function () {
+        moveTo(picks[0], function () {
+          picks.forEach(function (n) { n.classList.add('is-picked'); });
+          hold(i);
+        });
+      });
+    }
+    if (taps.length || typed.length) later(READ_MS, tap); else tap();
+  }
+
+  // The marked parts of the screen that are on show. A step can hold a
+  // second screen, or a second list, that is hidden until its results.
+  function shown(sel) {
+    if (screenEl.hidden) return [];
+    return [].filter.call(screenEl.querySelectorAll(sel), function (n) { return n.getClientRects().length > 0; });
+  }
+
+  function hold(i) {
+    if (state.mode === 'step_through') { waitForNext(function () { leave(i); }); return; }
+    later(dwellFor(state.sequence.steps[i]), function () { leave(i); });
+  }
+
+  function dwellFor(step) {
+    var d = Number(step.dwell_ms);
+    return d > 0 ? d : (Number(state.sequence.default_dwell_ms) || 3000);
+  }
+
+  function leave(i) {
+    var target = shown('[data-press]')[0];
+    moveTo(target, function () {
+      press(target, function () {
+        var clip = actionClipAfter(state.sequence.steps, i);
+        if (clip) playAction(clip, i); else runStep(i + 1);
+      });
+    });
+  }
+
+  // Steps that are the door being used, so they play the clip in place of a
+  // screen. The clip's length stands in for the step's dwell.
+  var DOOR_STEPS = { open_pocket_take: 'take', check_in: 'return' };
+  // Steps that end a take or return: anything after them is a new one.
+  var NEW_TRANSACTION = { select_action: 1, select_product: 1, product_search: 1, logout: 1 };
+
+  // The clip that plays after step i: 'take', 'return' or null.
+  // A take or return chosen on the knobs plays its clip once its last screen
+  // is done, which is the quantity if there is one, otherwise the knobs. If
+  // the sequence has its own door step for it, that step plays the clip
+  // instead, so it never plays twice. A Scale step is done on screen, so a
+  // take or return through one has no clip.
+  function actionClipAfter(steps, i) {
+    var type = steps[i].type;
+    if (type !== 'select_action' && type !== 'enter_quantity') return null;
+    var kind = null;
+    for (var k = i; k >= 0; k--) {
+      if (steps[k].type === 'select_action') { kind = (steps[k].params || {}).action === 'return' ? 'return' : 'take'; break; }
+      if (steps[k].type === 'select_product' || steps[k].type === 'product_search') return null;
+    }
+    if (!kind) return null;
+    for (k = i + 1; k < steps.length; k++) {
+      var t = steps[k].type;
+      if (t === 'enter_quantity' || DOOR_STEPS[t] || t === 'scale_transaction') return null;
+      if (NEW_TRANSACTION[t]) break;
+    }
+    return kind;
+  }
+
+  // Plays the take or return clip, then step i + 1 comes back on the device.
+  // The clips start and end at a different framing from the zoom, so they
+  // fade in and out on their own slide, as the login clip does.
+  function playAction(kind, i) {
+    var slot = slots[kind];
+    takeMedia.hidden = kind !== 'take';
+    returnMedia.hidden = kind !== 'return';
+    goTo('slide-action');
+    later(FADE_MS, function () {
+      // Once the device is out of sight: the screen is hidden so a log out
+      // straight after goes to the login screen without pressing Logout on
+      // the screen from before the clip, and the cursor shows again from
+      // its resting place after the clip, as the operator comes back.
+      screenEl.hidden = true;
+      hideCursor();
+      playClip(slot, function () { runStep(i + 1, true); });
+    });
+  }
+
+  function press(el, done, ms) {
+    if (!el) { done(); return; }
+    click();
+    el.classList.add('is-pressed');
+    later(ms || PRESS_MS, function () { el.classList.remove('is-pressed'); done(); });
+  }
+
+  /* ---------- The on-screen keyboard ----------
+   * Typing goes as it does on the device: the field is tapped, the keyboard
+   * or number pad takes over the screen, each key is pressed in turn, then
+   * Enter, and the screen comes back with the text in the field. The
+   * keyboards are in screens.js. ?keyboard=off types straight into the
+   * field instead.
+   *
+   * target: what the cursor taps. el: where the text ends up. caret: shows
+   * the caret when typing straight in. kind: 'text' or 'num'.
+   */
+  function typeOnScreen(target, el, caret, text, kind, label, done) {
+    moveTo(target, function () {
+      click();
+      if (!state.keyboardOn) { typeText(el, text, caret, done); return; }
+      var wasHidden = screenEl.hidden;
+      var holder = document.createElement('div');
+      holder.innerHTML = window.TIScreens.keyboard(kind, label);
+      var kb = holder.firstChild;
+      screenEl.appendChild(kb);
+      screenEl.hidden = false;
+      var out = kb.querySelector('.kbd-out');
+      var keys = {};
+      [].forEach.call(kb.querySelectorAll('[data-key]'), function (k) { keys[k.getAttribute('data-key')] = k; });
+      var plan = keyPlan(text, kind);
+      var shift = false, caps = false;
+      out.classList.add('is-typing');
+      later(KEYBOARD_READ_MS, next);
+
+      function next() {
+        var p = plan.shift();
+        var key = keys[p.key];
+        // A character the keyboard has no key for still appears
+        if (!key) { out.textContent += p.ch || ''; next(); return; }
+        moveTo(key, function () {
+          if (p.key === 'shift') shift = true;
+          if (p.key === 'caps') caps = !caps;
+          if (p.ch) { out.textContent += p.ch; shift = false; }
+          if (keys.shift) keys.shift.classList.toggle('is-on', shift);
+          if (keys.caps) keys.caps.classList.toggle('is-on', caps);
+          kb.classList.toggle('is-upper', shift || caps);
+          press(key, p.key === 'done' ? finish : next, KEY_PRESS_MS);
+        }, true);
+      }
+      function finish() {
+        kb.remove();
+        if (wasHidden) screenEl.hidden = true;
+        el.textContent = text;
+        done();
+      }
+    });
+  }
+
+  // The keys to press for text: Shift before a capital, Caps Lock before a
+  // run of them and again after it, each character, then Enter.
+  function keyPlan(text, kind) {
+    var plan = [], caps = false;
+    for (var i = 0; i < text.length; i++) {
+      var ch = text.charAt(i), low = ch.toLowerCase();
+      if (kind !== 'num' && /[a-z]/.test(low)) {
+        var upper = ch !== low;
+        if (upper && !caps) {
+          if (/[A-Z]/.test(text.charAt(i + 1))) { plan.push({ key: 'caps' }); caps = true; }
+          else plan.push({ key: 'shift' });
+        } else if (!upper && caps) {
+          plan.push({ key: 'caps' }); caps = false;
+        }
+      }
+      plan.push({ key: kind === 'num' ? ch : low, ch: ch });
+    }
+    plan.push({ key: 'done' });
+    return plan;
+  }
+
+  /* ---------- The cursor ----------
+   * Goes to whatever is typed into, picked or pressed next, so a viewer can
+   * follow the automatic screens. Positions are in the device layer's
+   * 1920x1080 px. It shows at CURSOR_REST the first time it is needed, and
+   * goes when the operator logs out or walks to the drawer for a clip.
+   */
+  // quick: a hop between keys on the on-screen keyboard
+  function moveTo(el, done, quick) {
+    var to = el && state.cursorOn ? cursorPoint(el) : null;
+    if (!to) { done(); return; }
+    if (!state.cursorAt) {
+      placeCursor(CURSOR_REST, 0);
+      cursor.classList.add('is-shown');
+      later(CURSOR_FADE_MS, function () { moveTo(el, done, quick); });
+      return;
+    }
+    var dist = Math.sqrt(Math.pow(to.x - state.cursorAt.x, 2) + Math.pow(to.y - state.cursorAt.y, 2));
+    if (dist < 2) { done(); return; }
+    var ms = quick
+      ? Math.min(KEY_MOVE_MAX_MS, KEY_MOVE_MIN_MS + dist * KEY_MS_PER_PX)
+      : Math.min(MOVE_MAX_MS, MOVE_MIN_MS + dist * MOVE_MS_PER_PX);
+    ms = Math.round(ms);
+    placeCursor(to, ms);
+    later(ms, done);
+  }
+
+  // The middle of el, in device px, or null if it takes no space.
+  function cursorPoint(el) {
+    var d = device.getBoundingClientRect();
+    var r = el.getBoundingClientRect();
+    if (!d.width || (!r.width && !r.height)) return null;
+    var k = 1920 / d.width;
+    return { x: (r.left + r.width / 2 - d.left) * k, y: (r.top + r.height / 2 - d.top) * k };
+  }
+
+  function placeCursor(p, ms) {
+    cursor.style.setProperty('--move-ms', ms + 'ms');
+    cursor.style.transform = 'translate(' + p.x.toFixed(1) + 'px, ' + p.y.toFixed(1) + 'px)';
+    state.cursorAt = p;
+  }
+
+  // Restarts the click ring and press, even when clicks come close together.
+  function click() {
+    if (!state.cursorAt) return;
+    cursor.classList.remove('is-clicking');
+    void cursor.offsetWidth;
+    cursor.classList.add('is-clicking');
+  }
+
+  // Fades out, letting a click that is still running finish.
+  function hideCursor() {
+    cursor.classList.remove('is-shown');
+    state.cursorAt = null;
+  }
+
+  // Log out: Logout is pressed on the screen that is up, then the device goes
+  // back to its login screen, with the farewell message in the welcome panel.
+  function logout(i, viaSlide) {
+    var step = state.sequence.steps[i];
+    var btn = shown('[data-logout]')[0];
+    later(btn ? READ_MS : 0, function () {
+      moveTo(btn, function () {
+        press(btn, function () {
+          hideCursor();
+          var screen = (MEDIA.login_screen || {})[state.mediaSolution];
+          var message = String((step.text || {}).message || '');
+          if (screen) {
+            plate.src = message ? screen.clean : screen.frame;
+            welcome.textContent = message;
+          }
+          fieldText.textContent = '';
+          screenEl.hidden = true;
+          if (viaSlide) {
+            goTo('slide-scene');
+            later(FADE_MS, function () { hold(i); });
+          } else {
+            hold(i);
+          }
+        });
+      });
+    });
+  }
+
+  // Step-through: Next, or the right arrow, Space, Enter or Page Down.
+  function waitForNext(fn) {
+    var run = state.run;
+    var from = Date.now();
+    stepNext.hidden = false;
+    state.onNext = function () {
+      if (run !== state.run || Date.now() - from < NEXT_GUARD_MS) return;
+      state.onNext = null;
+      stepNext.hidden = true;
+      stepNext.blur();
+      fn();
+    };
+  }
+  stepNext.addEventListener('click', function () { if (state.onNext) state.onNext(); });
+  document.addEventListener('keydown', function (e) {
+    if (!state.onNext) return;
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter' || e.key === 'PageDown') {
+      e.preventDefault();
+      state.onNext();
+    }
+  });
+
+  function clearScreen() {
+    screenEl.hidden = true;
+    screenEl.innerHTML = '';
+    stepNext.hidden = true;
+    state.onNext = null;
+    hideCursor();
+  }
+
+  function findSequence(id) {
+    var key = String(id).trim().toLowerCase();
+    for (var k in SEQUENCES) {
+      if (Object.prototype.hasOwnProperty.call(SEQUENCES, k) && k.toLowerCase() === key) return SEQUENCES[k];
+    }
+    return null;
   }
 
   /* ---------- User ID ---------- */
@@ -403,8 +830,9 @@
     state.busy = false;
     state.config = null;
     input.value = '';
-    ['env-media', 'zoom-media', 'login-media'].forEach(function (id) { document.getElementById(id).innerHTML = ''; });
+    ['env-media', 'zoom-media', 'login-media', 'take-media', 'return-media'].forEach(function (id) { document.getElementById(id).innerHTML = ''; });
     device.hidden = true;
+    clearScreen();
     resetPan();
     goTo('slide-title');
   });
@@ -423,7 +851,7 @@
   startLoop(slots.title);
 
   // ?userid=TI pre-fills the ID, for testing
-  var pre = new URLSearchParams(window.location.search).get('userid');
+  var pre = PARAMS.get('userid');
   if (pre) input.value = pre;
 
   window.TIDemo = { state: state, slots: slots, goTo: goTo };
