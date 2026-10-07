@@ -537,8 +537,8 @@
         </div>
     </div>
 
-    <script src="/shared/catalogue.js"></script>
-    <script src="/shared/event-types.js"></script>
+    <script src="shared/catalogue.js"></script>
+    <script src="shared/event-types.js"></script>
     <script>
     (function () {
         'use strict';
@@ -1003,7 +1003,7 @@
 
             stop();
             try {
-                var res = await fetch('/api/sequence/' + encodeURIComponent(userId));
+                var res = await fetch('api/sequence/' + encodeURIComponent(userId));
                 if (!res.ok) {
                     var e = await res.json();
                     message(e.error || 'Not found', 'error');

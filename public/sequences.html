@@ -440,9 +440,9 @@
         </div>
     </div>
 
-    <script src="/shared/catalogue.js"></script>
-    <script src="/shared/event-types.js"></script>
-    <script src="/shared/sequence-validator.js"></script>
+    <script src="shared/catalogue.js"></script>
+    <script src="shared/event-types.js"></script>
+    <script src="shared/sequence-validator.js"></script>
     <script>
     (function () {
         'use strict';
@@ -730,7 +730,7 @@
 
         async function save() {
             var seq = currentSequence();
-            var url = editingExisting ? '/api/sequence/' + encodeURIComponent(seq.user_id) : '/api/sequence';
+            var url = editingExisting ? 'api/sequence/' + encodeURIComponent(seq.user_id) : 'api/sequence';
             var method = editingExisting ? 'PUT' : 'POST';
 
             try {
@@ -760,7 +760,7 @@
 
         async function loadSaved() {
             try {
-                var res = await fetch('/api/sequences');
+                var res = await fetch('api/sequences');
                 var list = await res.json();
 
                 if (!list.length) {
@@ -795,7 +795,7 @@
 
         async function load(userId) {
             try {
-                var res = await fetch('/api/sequence/' + encodeURIComponent(userId));
+                var res = await fetch('api/sequence/' + encodeURIComponent(userId));
                 if (!res.ok) { showMessage('Could not load ' + userId, 'error'); return; }
                 var s = await res.json();
 
@@ -815,7 +815,7 @@
         async function remove(userId) {
             if (!confirm('Delete the sequence for "' + userId + '"? The four-field config is left alone.')) return;
             try {
-                var res = await fetch('/api/sequence/' + encodeURIComponent(userId), { method: 'DELETE' });
+                var res = await fetch('api/sequence/' + encodeURIComponent(userId), { method: 'DELETE' });
                 if (res.ok) {
                     showMessage('Deleted ' + userId + '.', 'success');
                     if (el.userId.value.trim() === userId) editingExisting = false;

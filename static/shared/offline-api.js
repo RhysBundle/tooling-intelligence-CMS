@@ -328,6 +328,10 @@
             if (/^https?:\/\//i.test(url)) path = new URL(url).pathname;
         } catch (e) { /* leave as-is */ }
 
+        // The pages call relative paths (api/...) so they also work under a
+        // sub-path; match those the same as /api/...
+        if (path.indexOf('api/') === 0) path = '/' + path;
+
         if (path.indexOf('/api/') !== 0) {
             return realFetch ? realFetch(input, init)
                 : Promise.reject(new Error('fetch is not available'));

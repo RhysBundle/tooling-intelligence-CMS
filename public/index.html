@@ -571,8 +571,9 @@
             }
         };
         
-        // Get base URL for API
-        const API_BASE = window.location.origin;
+        // The folder this page is served from, so the address shown is right
+        // at the root (Render) and under a sub-path (SAGA)
+        const API_BASE = new URL('.', window.location.href).href.replace(/\/$/, '');
         
         // Load configs on page load
         document.addEventListener('DOMContentLoaded', loadConfigs);
@@ -593,13 +594,13 @@
             try {
                 let response;
                 if (editMode) {
-                    response = await fetch(`/api/config/${userId}`, {
+                    response = await fetch(`api/config/${userId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
                     });
                 } else {
-                    response = await fetch('/api/config', {
+                    response = await fetch('api/config', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
@@ -624,7 +625,7 @@
         // Load all configurations
         async function loadConfigs() {
             try {
-                const response = await fetch('/api/configs');
+                const response = await fetch('api/configs');
                 const configs = await response.json();
                 
                 const list = document.getElementById('config-list');
@@ -675,7 +676,7 @@
         // Edit configuration
         async function editConfig(userId) {
             try {
-                const response = await fetch(`/api/config/${userId}`);
+                const response = await fetch(`api/config/${userId}`);
                 const config = await response.json();
                 
                 document.getElementById('user_id').value = config.user_id;
@@ -738,7 +739,7 @@
             }
             
             try {
-                const response = await fetch(`/api/config/${userId}`, {
+                const response = await fetch(`api/config/${userId}`, {
                     method: 'DELETE'
                 });
                 
