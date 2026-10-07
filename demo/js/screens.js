@@ -41,8 +41,9 @@ window.TIScreens = (function () {
   var DEVICE_NAMES = { smartdrawer: 'SmartDrawer', supplysystem: 'SupplySystem' };
 
   // The work areas on the phase 1 allocation screen (08_Search_3). The CMS
-  // has no list of codes, so both allocation prompts offer these, and the
-  // first is the one chosen or scanned.
+  // has no list of codes, so both allocation prompts offer these. The first
+  // prompt of a kind picks the first code, the next the second, and so on, so
+  // a run of prompts does not look like the same screen again.
   var ALLOC_CODES = ['C26', 'K5', 'K6'];
   var ALLOC_PITCH = 67;  // row top to row top, artwork px
   var CAT_ROWS = 3;      // category rows that fit the list
@@ -208,10 +209,11 @@ window.TIScreens = (function () {
   // Login and product allocation codes, as 08_Search_3 and 3A, with the
   // step's prompt as the heading. Picked from the list, then Next. A scan
   // fills FIND and the list narrows to the code, already picked.
-  function allocation(step) {
+  function allocation(step, ctx) {
     var t = step.text || {};
     var scan = (step.params || {}).input_mode === 'barcode';
-    var code = ALLOC_CODES[0];
+    var before = (ctx.steps || []).slice(0, ctx.index || 0).filter(function (s) { return s.type === step.type; }).length;
+    var code = ALLOC_CODES[before % ALLOC_CODES.length];
     function codes(only, picked, attr) {
       var shown = only ? [code] : ALLOC_CODES;
       return '<div class="scr-opts"' + (attr || '') + '>' + shown.map(function (c, k) {
@@ -409,7 +411,7 @@ window.TIScreens = (function () {
       case 'select_action': return action(step, ctx);
       case 'enter_quantity': return quantity(step, ctx);
       case 'login_allocation_code':
-      case 'product_allocation_code': return allocation(step);
+      case 'product_allocation_code': return allocation(step, ctx);
       case 'display_loan_period': return loanPeriod(step);
       case 'info_window': return dialog(t.title, t.body);
       case 'transaction_confirmation': return dialog('', t.message);

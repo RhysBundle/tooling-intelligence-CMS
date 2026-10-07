@@ -23,6 +23,10 @@ URL options, for testing:
 - `?cursor=off` turns the cursor off (see The cursor)
 - `?keyboard=off` types straight into fields instead of on the on-screen keyboard
 
+## Hosted on SAGA
+
+https://saga.bundletraining.com/demos/tooling-intelligence/ serves this demo, built with `build-scorm.py --html` from the `demo-2.0` branch on GitHub. The server checks GitHub every minute and rebuilds when the branch moves, so a push is live within a minute or two. The CMS runs alongside it at `.../tooling-intelligence/cms/`. Setup notes are in the project's CLAUDE.md.
+
 ## Media
 
 Every file is listed in `js/media.js`. A missing file shows a labelled placeholder, and a missing clip continues after 4 seconds.
@@ -81,11 +85,11 @@ Note the render's screen is a 16:9 version of the 1024x768 artwork: centred item
 | DEMO | search, select the router bit, take, quantity 1, take clip, log out, after the typed login |
 | STEUART | Steuart's Example 1 in full; its door-open step plays the take clip |
 | TI | none, so the run stops after login as before |
-| TI_EXAMPLE_1 | Steuart's Example 1, router bit take (CNC machine shop, RFID) |
-| TI_EXAMPLE_2 | Steuart's Example 2, a kit of four bolts, so the take clip plays four times (warehouse, barcode) |
-| TI_EXAMPLE_3 | Steuart's Example 3, scanner, cradle and Scale, step-through (SupplySystem, cleanroom, RFID in place of fingerprint) |
+| TI_EXAMPLE_1 | Steuart's Customer Example 1: typed login with password, three allocation codes (list, list, barcode), M10 gauge with quantity and take, then an end mill take (CNC machine shop) |
+| TI_EXAMPLE_2 | Steuart's Customer Example 2: a product kit, one search and select, then four takes (warehouse, barcode) |
+| TI_EXAMPLE_3 | Steuart's Customer Example 3: RFID login, three allocation codes, a lot managed dust mask with its lot number, take (SupplySystem, cleanroom) |
 
-The three TI_EXAMPLE IDs are Steuart's examples from `examples/steuart-example-sequences.json`, unchanged, for testers. Their configs are only in the demo: the examples give a login method and nothing else, so the hardware follows the product and the environments were chosen to suit it.
+The three TI_EXAMPLE IDs are Steuart's own customer examples, step for step, from `examples/steuart-example-sequences.json`, for testers. His lists name the steps and login types only, so the products, search terms, prompts and lot number were chosen from the catalogue and the phase 1 screens. "Info window enter quantity" in Example 1 is the quantity screen. Their configs are in the demo, the local CMS and the SAGA CMS, not the live one.
 
 The login is still driven by the config's `login_type`, so the sequence's own log in step is skipped. If the two name different methods, the config wins.
 
@@ -114,7 +118,7 @@ Every event type now has a screen or a clip. All screens are SmartDrawer's; Supp
 | `open_pocket_take`, `check_in` | the take or return clip | | see below |
 | `logout` | the login screen again, with the farewell message in the welcome panel | | Logout is pressed on the screen before |
 
-The phase 1 artwork has no screen for the scanner cradle or the Scale, so those two follow its instruction screen. The allocation codes are the work areas on 08_Search_3 (C26, K5, K6), because the CMS has no list of codes; the first is the one picked or scanned. The loan period box uses the device's own wording, so the step's Title is not shown.
+The phase 1 artwork has no screen for the scanner cradle or the Scale, so those two follow its instruction screen. The allocation codes are the work areas on 08_Search_3 (C26, K5, K6), because the CMS has no list of codes. The first prompt of a kind picks C26, the next K5, the next K6, so a run of prompts doesn't repeat itself. The loan period box uses the device's own wording, so the step's Title is not shown.
 
 Picked rows on the new list screens (allocation codes, categories) use the grey band from the artwork. The Select Product list and the knobs still use the blue outline added before the artwork with a picked state turned up.
 

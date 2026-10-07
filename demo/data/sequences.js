@@ -84,60 +84,58 @@ window.TI_SEQUENCES = {
     ]
   },
 
-  // Steuart's three examples, the tester demos. Copied unchanged from
+  // Steuart's three customer examples, the tester demos. Copied unchanged from
   // examples/steuart-example-sequences.json, under the same IDs the CMS seeds.
   TI_EXAMPLE_1: {
     user_id: 'TI_EXAMPLE_1',
-    name: 'Example 1 - single router bit take',
+    name: 'Customer Example 1 - three allocation codes, two products',
     playback_mode: 'auto',
     default_dwell_ms: 3000,
     steps: [
-      { type: 'login_method', params: { method: 'rfid' }, text: {}, dwell_ms: 3500 },
-      { type: 'login_allocation_code', params: { input_mode: 'barcode' }, text: { prompt: 'Scan job card', helper: 'Job card is on the work order' }, dwell_ms: null },
-      { type: 'product_search', params: { mode: 'typed', category: 'machine_tools' }, text: { query: 'Router' }, dwell_ms: null },
-      { type: 'select_product', params: { product: 'router_bit' }, text: {}, dwell_ms: null },
-      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: null },
+      { type: 'login_method', params: { method: 'typed_password' }, text: {}, dwell_ms: null },
+      { type: 'login_allocation_code', params: { input_mode: 'select_from_list' }, text: { prompt: 'Select Work Area' }, dwell_ms: null },
+      { type: 'login_allocation_code', params: { input_mode: 'select_from_list' }, text: { prompt: 'Select Cost Centre' }, dwell_ms: null },
+      { type: 'login_allocation_code', params: { input_mode: 'barcode' }, text: { prompt: 'Scan Job Card' }, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: null },
       { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
-      { type: 'open_pocket_take', params: {}, text: { message: '' }, dwell_ms: 4000 },
-      { type: 'transaction_confirmation', params: {}, text: { message: 'Taken successfully' }, dwell_ms: 2500 },
-      { type: 'logout', params: {}, text: { message: 'Thanks, goodbye' }, dwell_ms: 2500 }
+      { type: 'open_pocket_take', params: {}, text: { message: '' }, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'machine_tools' }, text: { query: 'End mill' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'endmill_10' }, text: {}, dwell_ms: null },
+      { type: 'open_pocket_take', params: {}, text: { message: '' }, dwell_ms: null },
+      { type: 'logout', params: {}, text: { message: 'Thanks, goodbye' }, dwell_ms: null }
     ]
   },
   TI_EXAMPLE_2: {
     user_id: 'TI_EXAMPLE_2',
-    name: 'Example 2 - product kit, four repeated takes',
+    name: 'Customer Example 2 - product kit, items from four locations',
     playback_mode: 'auto',
     default_dwell_ms: 3000,
     steps: [
-      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: 3500 },
-      { type: 'display_loan_period', params: {}, text: { title: 'Loan period', period: '7 days' }, dwell_ms: 2500 },
-      { type: 'product_search', params: { mode: 'category_page', category: 'fasteners' }, text: { query: '' }, dwell_ms: null },
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'fasteners' }, text: { query: 'kit' }, dwell_ms: null },
       { type: 'select_product', params: { product: 'bolt_kit_m8' }, text: {}, dwell_ms: null },
-      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: null },
-      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '4' }, dwell_ms: null },
-      { type: 'open_pocket_take', params: {}, text: { message: 'Door open. Take item 1 of 4.' }, dwell_ms: 3000 },
-      { type: 'open_pocket_take', params: {}, text: { message: 'Door open. Take item 2 of 4.' }, dwell_ms: 3000 },
-      { type: 'open_pocket_take', params: {}, text: { message: 'Door open. Take item 3 of 4.' }, dwell_ms: 3000 },
-      { type: 'open_pocket_take', params: {}, text: { message: 'Door open. Take item 4 of 4.' }, dwell_ms: 3000 },
-      { type: 'info_window', params: { info_type: 'quantity' }, text: { title: 'Quantity remaining', body: '4 of 8 pockets remaining in this drawer' }, dwell_ms: 4000 },
-      { type: 'logout', params: {}, text: { message: 'Kit issued, goodbye' }, dwell_ms: 2500 }
+      { type: 'open_pocket_take', params: {}, text: { message: '' }, dwell_ms: null },
+      { type: 'open_pocket_take', params: {}, text: { message: '' }, dwell_ms: null },
+      { type: 'open_pocket_take', params: {}, text: { message: '' }, dwell_ms: null },
+      { type: 'open_pocket_take', params: {}, text: { message: '' }, dwell_ms: null },
+      { type: 'logout', params: {}, text: { message: 'Kit issued, goodbye' }, dwell_ms: null }
     ]
   },
   TI_EXAMPLE_3: {
     user_id: 'TI_EXAMPLE_3',
-    name: 'Example 3 - fingerprint, scanner cradle and a Scale location',
-    playback_mode: 'step_through',
-    default_dwell_ms: 4000,
+    name: 'Customer Example 3 - allocation codes, lot managed product',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
     steps: [
-      { type: 'login_method', params: { method: 'fingerprint' }, text: {}, dwell_ms: null },
-      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'Scanner' }, dwell_ms: null },
-      { type: 'select_product', params: { product: 'scanner_tc22' }, text: {}, dwell_ms: null },
-      { type: 'product_allocation_code', params: { input_mode: 'select_from_list', applies_on: 'take' }, text: { prompt: 'Select cost centre' }, dwell_ms: null },
-      { type: 'handheld_scanner_cradle', params: { direction: 'from_cradle' }, text: { message: 'Lift the scanner from its cradle.' }, dwell_ms: 4000 },
-      { type: 'scale_transaction', params: { action: 'take' }, text: { weight: '1.248 kg', message: 'Place the items on the scale.' }, dwell_ms: 4500 },
+      { type: 'login_method', params: { method: 'rfid' }, text: {}, dwell_ms: null },
+      { type: 'login_allocation_code', params: { input_mode: 'select_from_list' }, text: { prompt: 'Select Work Area' }, dwell_ms: null },
+      { type: 'login_allocation_code', params: { input_mode: 'select_from_list' }, text: { prompt: 'Select Cost Centre' }, dwell_ms: null },
+      { type: 'login_allocation_code', params: { input_mode: 'barcode' }, text: { prompt: 'Scan Job Card' }, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'ppe' }, text: { query: 'mask' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'dust_mask' }, text: {}, dwell_ms: null },
       { type: 'info_window', params: { info_type: 'lot_number' }, text: { title: 'Lot number', body: 'Lot 4471-B, expires 03/2027' }, dwell_ms: null },
-      { type: 'check_in', params: {}, text: { prompt: 'Check item back in', confirmation: 'Returned successfully' }, dwell_ms: null },
-      { type: 'handheld_scanner_cradle', params: { direction: 'to_cradle' }, text: { message: 'Return the scanner to its cradle.' }, dwell_ms: 4000 },
+      { type: 'open_pocket_take', params: {}, text: { message: '' }, dwell_ms: null },
       { type: 'logout', params: {}, text: { message: 'Goodbye' }, dwell_ms: null }
     ]
   },
