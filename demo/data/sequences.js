@@ -1,7 +1,8 @@
 /*
  * Sequences, baked in like configs.js so the demo runs from file:// and offline.
  * Keyed by user ID, matched ignoring case. Same shape as the CMS stores them
- * (see SEQUENCES.md). The CMS export will replace this file.
+ * (see SEQUENCES.md). Over http(s) the CMS in data/cms.js is asked first;
+ * this file covers what it hasn't got (see demo/README.md).
  *
  * The log in step is kept so a sequence passes the CMS validator unchanged,
  * but the demo's login is still driven by the config's login_type.

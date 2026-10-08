@@ -259,7 +259,7 @@
     zoomMedia.classList.remove('is-shown');
   }
 
-  function prepare(config) {
+  function prepare(config, sequence) {
     var env = (MEDIA.environments || {})[config.location] || {};
     // Which product's media to use. See stand_in in media.js.
     var sol = (MEDIA.stand_in || {})[config.solution] || config.solution;
@@ -306,11 +306,12 @@
     }
     state.hasScreen = !!screen;
 
-    // The sequence that plays after login. ?mode=step or ?mode=auto overrides
-    // the sequence's own playback mode, ?tone=off turns the render tone off
-    // and ?cursor=off the cursor, ?keyboard=off the on-screen keyboard, all
-    // for testing.
-    state.sequence = findSequence(config.user_id);
+    // The sequence that plays after login, from the CMS or the demo's own
+    // files (see the user ID lookup). ?mode=step or ?mode=auto overrides the
+    // sequence's own playback mode, ?tone=off turns the render tone off and
+    // ?cursor=off the cursor, ?keyboard=off the on-screen keyboard, all for
+    // testing.
+    state.sequence = sequence || null;
     state.cursorOn = PARAMS.get('cursor') !== 'off';
     state.keyboardOn = PARAMS.get('keyboard') !== 'off';
     var mode = PARAMS.get('mode');
@@ -791,7 +792,60 @@
     return null;
   }
 
-  /* ---------- User ID ---------- */
+  /* ---------- User ID ----------
+   * Over http(s) the ID is looked up in the CMS first (data/cms.js), so a user
+   * made or changed there works straight away; on SAGA that is the CMS next
+   * to the demo. Whatever the CMS hasn't got, the ID or its sequence, comes
+   * from the demo's own configs.js and sequences.js, which are also the only
+   * source from file:// and when the CMS can't be reached.
+   */
+  var CMS_TIMEOUT_MS = 6000;  // a CMS that hasn't answered by then counts as down
+
+  // The CMS's address, ending in a slash, or null for none. ?cms= overrides
+  // data/cms.js for testing, and ?cms=off turns it off.
+  function cmsBase() {
+    var setting = PARAMS.has('cms') ? PARAMS.get('cms') : window.TI_CMS;
+    if (!setting || setting === 'off' || !window.fetch) return null;
+    var url;
+    try { url = new URL(setting, window.location.href); } catch (e) { return null; }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.href.replace(/\/*$/, '/');
+  }
+
+  // Resolves to { config, sequence } from the CMS (sequence null if it has
+  // none), or null if it hasn't got the ID. Rejects if it can't be reached.
+  function fromCms(base, id) {
+    var ctl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctl) ctl.abort(); }, CMS_TIMEOUT_MS);
+    function get(path) {
+      return fetch(base + path, { cache: 'no-store', signal: ctl ? ctl.signal : undefined }).then(function (r) {
+        if (r.status === 404) return null;
+        if (!r.ok) throw new Error('The CMS answered ' + r.status);
+        return r.json();
+      });
+    }
+    // The CMS matches IDs case by case, so a miss checks its whole list,
+    // ignoring case, as the lookup in configs.js does.
+    return get('api/config/' + encodeURIComponent(id)).then(function (config) {
+      if (config) return config;
+      return get('api/configs').then(function (all) {
+        var key = id.toLowerCase();
+        return (all || []).filter(function (c) { return String(c.user_id).toLowerCase() === key; })[0] || null;
+      });
+    }).then(function (config) {
+      if (!config) return null;
+      return get('api/sequence/' + encodeURIComponent(config.user_id)).then(function (sequence) {
+        return { config: config, sequence: sequence };
+      });
+    }).then(function (found) {
+      clearTimeout(timer);
+      return found;
+    }, function (err) {
+      clearTimeout(timer);
+      throw err;
+    });
+  }
+
   function findConfig(id) {
     var key = id.trim().toLowerCase();
     for (var i = 0; i < CONFIGS.length; i++) {
@@ -803,6 +857,7 @@
   var form = document.getElementById('userid-form');
   var input = document.getElementById('userid');
   var error = document.getElementById('userid-error');
+  var submitBtn = form.querySelector('[type="submit"]');
 
   function showError(msg) {
     error.textContent = msg;
@@ -819,13 +874,42 @@
     if (state.busy) return;
     var id = input.value.trim();
     if (!id) { showError('Please enter your user ID.'); return; }
-    var config = findConfig(id);
-    if (!config) { showError("We couldn't find that user ID. Check it and try again."); return; }
     state.busy = true;
-    state.config = config;
-    prepare(config);
-    begin();
+    var cms = cmsBase();
+    if (!cms) { start(id, null); return; }
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Checking...';
+    fromCms(cms, id).then(function (found) {
+      start(id, found || {});
+    }, function (err) {
+      if (window.console) console.warn("Couldn't reach the CMS, so the demo's own data is used.", err);
+      start(id, { down: true });
+    });
   });
+
+  // found: what the CMS had ({ config, sequence }), {} if it hasn't got the
+  // ID, { down: true } if it couldn't be reached, or null if it wasn't asked.
+  function start(id, found) {
+    found = found || {};
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit';
+    var config = found.config || findConfig(id);
+    if (!config) {
+      state.busy = false;
+      showError(found.down
+        ? "We couldn't reach the CMS to check that user ID. Check the connection and try again."
+        : "We couldn't find that user ID. Check it and try again.");
+      return;
+    }
+    var sequence = found.sequence || findSequence(config.user_id);
+    state.source = {
+      config: found.config ? 'CMS' : 'Demo data files',
+      sequence: found.sequence ? 'CMS' : sequence ? 'Demo data files' : 'None'
+    };
+    state.config = config;
+    prepare(config, sequence);
+    begin();
+  }
 
   function showNext(note) {
     var c = state.config;
@@ -833,7 +917,9 @@
       ['User ID', c.user_id],
       ['Environment', LABELS.location[c.location] || c.location],
       ['Solution', LABELS.solution[c.solution] || c.solution],
-      ['Login method', LABELS.login_type[c.login_type] || c.login_type]
+      ['Login method', LABELS.login_type[c.login_type] || c.login_type],
+      ['Config from', state.source.config],
+      ['Sequence from', state.source.sequence]
     ];
     document.getElementById('next-config').innerHTML = rows.map(function (r) {
       return '<dt>' + escapeHtml(r[0]) + '</dt><dd>' + escapeHtml(r[1]) + '</dd>';

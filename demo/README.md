@@ -5,7 +5,7 @@ Replaces the Storyline file. Open `index.html` in Chrome or Edge, or serve the f
 ## Flow so far
 
 1. Title screen, Start button
-2. User ID screen. Checks the ID against `data/configs.js`, ignoring case.
+2. User ID screen. Looks the ID up in the CMS when the demo is served over http(s), then in `data/configs.js`, ignoring case (see User IDs and the CMS).
 3. Environment clip for the customer's `location`, ending on the two products
 4. The hand-off to the product (see below)
 5. The zoom and login clip for the customer's `login_type`: one clip that zooms onto the screen, logs in and ends on the login screen's frame. SupplySystem configs use SmartDrawer's for now (see `stand_in`).
@@ -13,7 +13,7 @@ Replaces the Storyline file. Open `index.html` in Chrome or Edge, or serve the f
    - Typed logins: the user ID is typed on the on-screen keyboard and Enter is pressed
    - Badge and barcode logins: the physical login clip plays
 7. The customer's sequence from `data/sequences.js`, one device screen per step, with the take or return clip each time an item is taken out or put back (see below). A user ID with no sequence skips this.
-8. Stub screen showing the loaded config
+8. Stub screen showing the loaded config, and whether its config and sequence came from the CMS or the demo's data files
 
 URL options, for testing:
 
@@ -22,10 +22,26 @@ URL options, for testing:
 - `?tone=off` turns the render tone off (see Device screens)
 - `?cursor=off` turns the cursor off (see The cursor)
 - `?keyboard=off` types straight into fields instead of on the on-screen keyboard
+- `?cms=http://localhost:3000/` looks user IDs up in that CMS instead of the one in `data/cms.js`; `?cms=off` uses the data files only
 
 ## Hosted on SAGA
 
-https://saga.bundletraining.com/demos/tooling-intelligence/ serves this demo, built with `build-scorm.py --html` from the `demo-2.0` branch on GitHub. The server checks GitHub every minute and rebuilds when the branch moves, so a push is live within a minute or two. The CMS runs alongside it at `.../tooling-intelligence/cms/`. Setup notes are in the project's CLAUDE.md.
+https://saga.bundletraining.com/demos/tooling-intelligence/ serves this demo, built with `build-scorm.py --html` from the `demo-2.0` branch on GitHub. The server checks GitHub every minute and rebuilds when the branch moves, so a push is live within a minute or two. The CMS runs alongside it at `.../tooling-intelligence/cms/`, and the demo looks user IDs up there, so a user made or changed in that CMS works in the demo straight away, with no push. Setup notes are in the project's CLAUDE.md.
+
+## User IDs and the CMS
+
+`data/cms.js` says which CMS to ask: `cms/`, relative to `index.html`, which on SAGA is the CMS next to the demo. On Start, over http(s):
+
+1. The demo asks the CMS for the ID's config (`api/config/<id>`). The CMS matches IDs case by case, so on a miss it checks the CMS's full list ignoring case, as the data files do.
+2. If the CMS has the config, the demo asks for its sequence too (`api/sequence/<id>`).
+3. Whatever the CMS hasn't got comes from `data/configs.js` and `data/sequences.js`. So an ID that is only in the data files (DEMO, BRANDED) still works, and a CMS user with no sequence there uses the data files' sequence of the same ID if there is one (STEUART on SAGA).
+4. If the CMS can't be reached, or hasn't answered in 6 seconds, the data files are used. An ID that isn't in them then gets "We couldn't reach the CMS".
+
+Submit shows "Checking..." while it asks. The stub at the end says where the config and the sequence came from.
+
+From file:// there is no CMS lookup, so the data files are the only source, and the demo still runs offline. The same goes for any copy served somewhere without a CMS at `cms/` beside it: the lookup gets a 404 and the data files are used. For an offline per-customer package, set `window.TI_CMS = null` in `data/cms.js`.
+
+A CMS sequence plays only if it passes the validator, as the data files' sequences do.
 
 ## Media
 
@@ -76,7 +92,7 @@ Note the render's screen is a 16:9 version of the 1024x768 artwork: centred item
 
 ## The sequence
 
-`data/sequences.js` holds one sequence per user ID, in the shape the CMS stores (see `SEQUENCES.md`), matched ignoring case. The CMS export will replace it. Before playing, the sequence is checked with the CMS's own validator, and one that breaks the rules is not played; the stub says why.
+The sequence comes from the CMS or from `data/sequences.js` (see User IDs and the CMS). `data/sequences.js` holds one sequence per user ID, in the shape the CMS stores (see `SEQUENCES.md`), matched ignoring case. Before playing, the sequence is checked with the CMS's own validator, and one that breaks the rules is not played; the stub says why.
 
 | User ID | Sequence |
 | --- | --- |
@@ -176,7 +192,7 @@ The logo on every screen is Tooling Intelligence's unless the config gives its o
 
 ### Customer colours and logo
 
-Three optional config fields dress the device screens in a customer's brand. They are set in the CMS, on the Configurations page under Device screen branding, which has colour pickers, a logo upload and a preview. The demo reads them from `data/configs.js`, so until the CMS export exists, copy a config's values across by hand.
+Three optional config fields dress the device screens in a customer's brand. They are set in the CMS, on the Configurations page under Device screen branding, which has colour pickers, a logo upload and a preview. The demo gets them with the rest of the config from the CMS (see User IDs and the CMS), or from `data/configs.js`.
 
 | Field | What it changes |
 | --- | --- |
@@ -206,8 +222,9 @@ js/scorm.js        SCORM 1.2 wrapper, does nothing outside an LMS
 js/media.js        every video and still
 js/screens.js      the device screens, one per event type
 js/demo.js         scaling, slide changes, user ID, the run, the sequence
-data/configs.js    customer configs (the CMS export will replace this)
-data/sequences.js  customer sequences (the CMS export will replace this)
+data/configs.js    customer configs, used when the CMS hasn't got the ID
+data/sequences.js  customer sequences, the same
+data/cms.js        which CMS to look user IDs up in
 assets/            fonts (Open Sans, Arimo), logo, video, img
 tools/             build-slides.py, pan-fit.json, screen-check.html; not packaged
 ../shared/         catalogue.js, event-types.js, sequence-validator.js, theme.js, from the CMS
