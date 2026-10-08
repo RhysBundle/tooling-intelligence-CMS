@@ -323,14 +323,15 @@
   }
 
   // The customer's colours and logo on the device screens, from the config's
-  // theme_colour, button_colour and logo (see themeVars in screens.js). The
-  // login screen is the render's own frame, so it keeps the device's colours.
-  // A logo that does not load shows as a labelled box, so a wrong path is seen
-  // rather than quietly showing TI's.
+  // theme_colour, button_colour and logo (see shared/theme.js, which the CMS
+  // previews them with). The login screen is the render's own frame, so it
+  // keeps the device's colours. The logo is a data URI from the CMS or a path
+  // from this folder. One that does not load shows as a labelled box, so a
+  // wrong path is seen rather than quietly showing TI's.
   var DEFAULT_LOGO = window.TIScreens.logo;
   function setTheme(config) {
-    var vars = window.TIScreens.themeVars(config);
-    window.TIScreens.THEME_VARS.forEach(function (name) {
+    var vars = window.TITheme.vars(config);
+    window.TITheme.VARS.forEach(function (name) {
       if (vars[name]) screenEl.style.setProperty(name, vars[name]);
       else screenEl.style.removeProperty(name);
     });

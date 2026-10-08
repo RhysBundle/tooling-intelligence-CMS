@@ -402,47 +402,6 @@ window.TIScreens = (function () {
     '</div>';
   };
 
-  /* ---------- Customer colours ----------
-   * The CSS variables for a config's theme_colour (the screen behind the
-   * panel, the title bar, under the keyboard) and button_colour (buttons, the
-   * line under the title bar, pressed keys). The device's gradients and edges
-   * are worked out from the one colour, in the same steps as the device's own
-   * red and grey, and text goes white or dark, whichever reads better. A
-   * colour that is missing or not a hex code gives no variables, so the
-   * device's own colour stays.
-   */
-  api.themeVars = function (config) {
-    var vars = {};
-    var bg = hexRgb(config.theme_colour);
-    if (bg) {
-      var text = textOn(bg);
-      vars['--scr-bg'] = hex(bg);
-      vars['--scr-title'] = hex(mix(bg, [0, 0, 0], 0.08));
-      vars['--scr-title-mark'] = hex(mix(bg, text === '#fff' ? [255, 255, 255] : [0, 0, 0], 0.135));
-      vars['--scr-title-text'] = text;
-    }
-    var btn = hexRgb(config.button_colour);
-    if (btn) {
-      var dark = [42, 42, 42];
-      vars['--btn-top'] = hex(btn);
-      vars['--btn-mid'] = hex(mix(btn, [0, 0, 0], 0.18));
-      vars['--btn-bottom'] = hex(mix(btn, [0, 0, 0], 0.34));
-      vars['--btn-edge'] = hex(mix(btn, dark, 0.6));
-      vars['--btn-edge-top'] = hex(mix(btn, dark, 0.4));
-      vars['--btn-text'] = textOn(mix(btn, [0, 0, 0], 0.18));
-      vars['--btn-line-a'] = hex(mix(btn, [0, 0, 0], 0.12));
-      vars['--btn-line'] = hex(btn);
-      vars['--btn-line-b'] = hex(mix(btn, [0, 0, 0], 0.32));
-      vars['--key-on-top'] = hex(btn);
-      vars['--key-on-bottom'] = hex(mix(btn, [0, 0, 0], 0.38));
-    }
-    return vars;
-  };
-  // Every variable themeVars can set, so demo.js can clear the last customer's.
-  api.THEME_VARS = ['--scr-bg', '--scr-title', '--scr-title-mark', '--scr-title-text',
-    '--btn-top', '--btn-mid', '--btn-bottom', '--btn-edge', '--btn-edge-top', '--btn-text',
-    '--btn-line-a', '--btn-line', '--btn-line-b', '--key-on-top', '--key-on-bottom'];
-
   /* ---------- API ---------- */
 
   /* The screen for one step, as HTML.
@@ -503,30 +462,6 @@ window.TIScreens = (function () {
     var at = pool.indexOf(p);
     if (at >= 0 && at < ROWS) return pool;
     return [p].concat(pool.filter(function (q) { return q !== p; }));
-  }
-
-  // '#3a8ee0', '3a8ee0' or '#38e' to [r, g, b], or null.
-  function hexRgb(s) {
-    var m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(s == null ? '' : s).trim());
-    if (!m) return null;
-    var h = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1];
-    return [0, 2, 4].map(function (k) { return parseInt(h.substr(k, 2), 16); });
-  }
-
-  function hex(rgb) {
-    return '#' + rgb.map(function (c) { return ('0' + Math.round(c).toString(16)).slice(-2); }).join('');
-  }
-
-  function mix(a, b, t) {
-    return a.map(function (c, k) { return c + (b[k] - c) * t; });
-  }
-
-  // White or dark text, whichever has the higher contrast on rgb (WCAG).
-  function textOn(rgb) {
-    var l = rgb.map(function (c) { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); });
-    var lum = 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2];
-    var dark = 0.0331;  // #333
-    return 1.05 / (lum + 0.05) >= (lum + 0.05) / (dark + 0.05) ? '#fff' : '#333';
   }
 
   function esc(s) {

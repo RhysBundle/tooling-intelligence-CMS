@@ -13,8 +13,8 @@ nothing there.
 Standard library only. Lists every file in the manifest, and leaves out
 this script, the README, tools/ and anything not needed at runtime.
 
-The demo loads the CMS's own catalogue, event types and validator from
-../shared. The package puts them in shared/ next to index.html, and the
+The demo loads the CMS's own catalogue, event types, validator and colour
+rules from ../shared. The package puts them in shared/ next to index.html, and the
 index.html it packs has those paths rewritten to match.
 """
 import re
@@ -26,7 +26,7 @@ from xml.sax.saxutils import quoteattr
 ROOT = Path(__file__).resolve().parent
 SHARED = ROOT.parent / 'shared'
 INCLUDE = ['index.html', 'css', 'js', 'data', 'assets']
-SHARED_FILES = ['catalogue.js', 'event-types.js', 'sequence-validator.js']
+SHARED_FILES = ['catalogue.js', 'event-types.js', 'sequence-validator.js', 'theme.js']
 SKIP_NAMES = {'README.txt', '.DS_Store', 'Thumbs.db'}
 TITLE = 'Tooling Interactive Customised Product Experience'
 

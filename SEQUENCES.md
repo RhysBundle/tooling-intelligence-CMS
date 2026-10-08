@@ -8,6 +8,11 @@ Nothing here changes the shipped four-field CMS. `user_configs` and its
 `/api/config` endpoints are untouched, so the live Storyline module keeps
 working exactly as it does today whether a sequence exists or not.
 
+(Since Oct 2026 `user_configs` also has three optional columns for the HTML
+demo's device screens: `theme_colour`, `button_colour` and `logo`, checked by
+`shared/theme.js`. The server adds them to an existing database on start. The
+four original fields and their endpoints behave as before.)
+
 ## What is here
 
 | File | What it does |

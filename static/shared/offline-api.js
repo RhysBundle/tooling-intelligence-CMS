@@ -186,6 +186,9 @@
                 solution: c.solution,
                 login_type: c.login_type,
                 location: c.location,
+                theme_colour: c.theme_colour || null,
+                button_colour: c.button_colour || null,
+                logo: c.logo || null,
                 created_at: now(),
                 updated_at: now()
             });
@@ -207,11 +210,16 @@
 
             if (method === 'PUT') {
                 if (!existing) return reply(404, { error: 'User ID not found' });
+                // As the server: colour and logo fields the body leaves out
+                // keep what is stored.
                 configs.put({
                     user_id: cid,
                     solution: body.solution,
                     login_type: body.login_type,
                     location: body.location,
+                    theme_colour: 'theme_colour' in body ? body.theme_colour || null : existing.theme_colour || null,
+                    button_colour: 'button_colour' in body ? body.button_colour || null : existing.button_colour || null,
+                    logo: 'logo' in body ? body.logo || null : existing.logo || null,
                     created_at: existing.created_at || now(),
                     updated_at: now()
                 });

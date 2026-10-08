@@ -486,6 +486,47 @@ test('the browsed category resolves from the most recent category page', () => {
     assert.strictEqual(TIEvents.browsedCategoryAt(steps, 0), null);
 });
 
+// ---- customer colours and logo (shared/theme.js) ------------------
+
+const TITheme = require('../shared/theme.js');
+const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+test('colours are tidied to lower case #rrggbb, and anything else is refused', () => {
+    assert.strictEqual(TITheme.colour('3D6B99'), '#3d6b99');
+    assert.strictEqual(TITheme.colour(' #38e '), '#3388ee');
+    assert.strictEqual(TITheme.colour('blue'), null);
+    assert.strictEqual(TITheme.colour('#12345'), null);
+    const r = TITheme.normalise({ theme_colour: 'blue', button_colour: '#e8862a' });
+    assert.strictEqual(r.errors.length, 1);
+    assert.strictEqual(r.values.button_colour, '#e8862a');
+});
+
+test('a field left out stays out, so an update keeps what is stored; blank clears it', () => {
+    assert.deepStrictEqual(TITheme.normalise({ solution: 'smartdrawer' }).values, {});
+    assert.deepStrictEqual(TITheme.normalise({ theme_colour: '', logo: null }).values, { theme_colour: null, logo: null });
+});
+
+test('a logo must be an image data URI under the size limit', () => {
+    assert.strictEqual(TITheme.logoProblem(PNG), null);
+    assert.ok(TITheme.logoProblem('assets/img/logo.png'));
+    assert.ok(TITheme.logoProblem('data:text/html;base64,PGI+aGk8L2I+'));
+    assert.ok(TITheme.logoProblem('data:image/png;base64,' + 'A'.repeat(Math.ceil(TITheme.LOGO_MAX_BYTES * 4 / 3) + 8)));
+    assert.ok(TITheme.logoProblem('data:image/svg+xml;base64,PHN2Zz4=" onerror="x'));
+});
+
+test('no colours means no variables, so the device keeps its own grey and red', () => {
+    assert.deepStrictEqual(TITheme.vars({}), {});
+    const v = TITheme.vars({ theme_colour: '#3e3e3e' });
+    assert.strictEqual(v['--scr-title'], '#393939');
+    assert.strictEqual(v['--scr-title-mark'], '#585858');
+});
+
+test('text on a light colour goes dark', () => {
+    assert.strictEqual(TITheme.vars({ theme_colour: '#dfe6ec' })['--scr-title-text'], '#333');
+    assert.strictEqual(TITheme.vars({ button_colour: '#ffd200' })['--btn-text'], '#333');
+    assert.strictEqual(TITheme.vars({ button_colour: '#1f4e79' })['--btn-text'], '#fff');
+});
+
 // ---- summary ------------------------------------------------------
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

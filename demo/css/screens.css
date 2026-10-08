@@ -14,7 +14,7 @@
 
    A customer's colours (theme_colour and button_colour in their config) come
    in as the --scr-* and --btn-* variables, set on #screen by demo.js and
-   worked out in TIScreens.themeVars. Each var() falls back to the device's own
+   worked out in shared/theme.js. Each var() falls back to the device's own
    grey or red, so a config without them looks exactly as the artwork. */
 
 .screen { position: absolute; inset: 0; overflow: hidden; }

@@ -37,7 +37,7 @@ SHARED = os.path.join(ROOT, 'shared')
 STATIC = os.path.join(ROOT, 'static')
 DIST = os.path.join(STATIC, 'dist')
 
-SHARED_FILES = ['catalogue.js', 'event-types.js', 'sequence-validator.js']
+SHARED_FILES = ['catalogue.js', 'event-types.js', 'sequence-validator.js', 'theme.js']
 
 # public/index.html is the CMS's own home page, so it becomes the bundle's.
 PAGES = [

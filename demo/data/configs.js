@@ -3,16 +3,18 @@
  * Snapshot of the live CMS on 3 Sep 2026 (examples/live-configs-2026-09-03.json).
  * The CMS export will replace this file with the one customer being exported.
  *
- * Demo-only fields, not in the CMS yet:
- *   welcome_message  the login screen's text, line breaks as \n
+ * Optional fields, beyond the four every config has:
+ *   welcome_message  the login screen's text, line breaks as \n. Demo only,
+ *                    not in the CMS yet
  *   theme_colour     the device screens' background and title bar, as hex
  *   button_colour    their buttons, the line under the title bar and pressed
  *                    keys, as hex
- *   logo             the logo in the screens' title bar: put the file in
- *                    assets/img/logos/ and give its path from the demo
- *                    folder. White or light, as the title bar is dark
- *                    unless theme_colour is light
- * Leave any of them out for the device's own look.
+ *   logo             the logo in the screens' title bar: the data URI the
+ *                    CMS stores, or a file in assets/img/logos/ given by
+ *                    its path from the demo folder
+ * The last three are set in the CMS (Device screen branding); copy them here
+ * by hand until the export exists. Leave any of them out for the device's
+ * own look. See shared/theme.js.
  */
 window.TI_CONFIGS = [
   { user_id: 'test1',   solution: 'smartdrawer',  login_type: 'barcode',           location: 'rail_depot' },  // switched to SmartDrawer in the CMS, 2 Oct

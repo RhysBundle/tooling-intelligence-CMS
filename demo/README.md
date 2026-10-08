@@ -1,6 +1,6 @@
 # TI product demo, HTML player
 
-Replaces the Storyline file. Open `index.html` in Chrome or Edge, or serve the folder. No build step and no network needed. It also needs `../shared/` from the repo, for the product catalogue and the sequence rules.
+Replaces the Storyline file. Open `index.html` in Chrome or Edge, or serve the folder. No build step and no network needed. It also needs `../shared/` from the repo, for the product catalogue, the sequence rules and the customer colours.
 
 ## Flow so far
 
@@ -176,15 +176,15 @@ The logo on every screen is Tooling Intelligence's unless the config gives its o
 
 ### Customer colours and logo
 
-Three optional config fields in `data/configs.js` dress the device screens in a customer's brand. They are in the demo only, not the CMS yet.
+Three optional config fields dress the device screens in a customer's brand. They are set in the CMS, on the Configurations page under Device screen branding, which has colour pickers, a logo upload and a preview. The demo reads them from `data/configs.js`, so until the CMS export exists, copy a config's values across by hand.
 
 | Field | What it changes |
 | --- | --- |
 | `theme_colour` | the screen behind the white panel, the title bar, and under the keyboard |
 | `button_colour` | every button, the line under the title bar, and pressed keys on the keyboard |
-| `logo` | the logo in the title bar, in place of TI's. A path from the demo folder; keep the files in `assets/img/logos/` |
+| `logo` | the logo in the title bar, in place of TI's. The CMS stores it as a data URI (SVG, PNG, JPEG or WebP, under 500 KB), which works as it is in `configs.js`. A path from the demo folder works too; keep those files in `assets/img/logos/` |
 
-Colours are hex, such as `'#3d6b99'`. The device's gradients and edges are worked out from the one colour, in the same steps as its own red and grey (`themeVars` in `js/screens.js`), and text turns dark on a light colour. Leave a field out, or give something that is not a hex code, and the device's own colour stays.
+Colours are hex, such as `'#3d6b99'`. The device's gradients and edges are worked out from the one colour, in the same steps as its own red and grey, and text turns dark on a light colour. That is `shared/theme.js`, which the CMS also uses to check the fields and draw its preview, so the two agree. Leave a field out, or give something that is not a hex code, and the device's own colour stays.
 
 The logo fits the box TI's fills: 45px high in artwork px, up to 420px wide, from the right. PNG with transparency or SVG works best, white or light for a dark title bar. A logo that doesn't load shows a dashed box saying "Logo not found" with the path, so a typo shows rather than falling back to TI's. `assets/img/logos/sample-logo.svg` is a placeholder for the BRANDED test config.
 
@@ -210,9 +210,9 @@ data/configs.js    customer configs (the CMS export will replace this)
 data/sequences.js  customer sequences (the CMS export will replace this)
 assets/            fonts (Open Sans, Arimo), logo, video, img
 tools/             build-slides.py, pan-fit.json, screen-check.html; not packaged
-../shared/         catalogue.js, event-types.js, sequence-validator.js, from the CMS
+../shared/         catalogue.js, event-types.js, sequence-validator.js, theme.js, from the CMS
 ```
 
-`build-scorm.py` packs `../shared/` into `shared/` in the zip and rewrites the three script paths in the packed `index.html`, so the package stands alone.
+`build-scorm.py` packs `../shared/` into `shared/` in the zip and rewrites the four script paths in the packed `index.html`, so the package stands alone.
 
 `python build-scorm.py --html` makes the same zip without the SCORM manifest, with `index.html` at the root, for a plain web host such as SAGA. Both stop if a file is asked for in a different case from its name (Windows forgives that, a web host does not), and list the media slots that have no file yet.

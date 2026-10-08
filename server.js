@@ -7,6 +7,7 @@ const cors = require('cors');
 const TICatalogue = require('./shared/catalogue.js');
 const TIEvents = require('./shared/event-types.js');
 const TIValidator = require('./shared/sequence-validator.js');
+const TITheme = require('./shared/theme.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,7 +15,9 @@ const DB_PATH = path.join(__dirname, 'configs.db');
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+// Raised from the 100kb default because a config can carry its logo as a
+// data URI (up to TITheme.LOGO_MAX_BYTES, a third bigger once encoded).
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static('public'));
 // event-types.js and sequence-validator.js are required above AND served to
 // the browser, so the builder, the player and the API share one rule set.
@@ -55,6 +58,14 @@ async function initDatabase() {
         )
     `);
 
+    // The customer's colours and logo for the demo's device screens (see
+    // shared/theme.js), added Oct 2026. Added as columns, so an existing
+    // database keeps its rows; all three are optional and start empty.
+    const columns = rowsFrom(db.exec('PRAGMA table_info(user_configs)')).map(c => c.name);
+    THEME_FIELDS.forEach(name => {
+        if (columns.indexOf(name) < 0) db.run(`ALTER TABLE user_configs ADD COLUMN ${name} TEXT`);
+    });
+
     // Sequences are stored alongside, keyed on the same user_id, so a customer
     // can have the original four-field config, a sequence, or both. The
     // existing user_configs table is deliberately untouched: the live service
@@ -76,6 +87,8 @@ async function initDatabase() {
 // ============================================
 // HELPERS
 // ============================================
+
+const THEME_FIELDS = ['theme_colour', 'button_colour', 'logo'];
 
 function rowsFrom(results) {
     if (results.length === 0) return [];
@@ -169,6 +182,10 @@ app.post('/api/config', (req, res) => {
     if (!user_id || !solution || !login_type || !location) {
         return res.status(400).json({ error: 'All fields are required' });
     }
+    const theme = TITheme.normalise(req.body);
+    if (theme.errors.length) {
+        return res.status(400).json({ error: theme.errors[0], errors: theme.errors });
+    }
     
     try {
         // Check if user_id already exists
@@ -182,9 +199,9 @@ app.post('/api/config', (req, res) => {
         }
         
         db.run(`
-            INSERT INTO user_configs (user_id, solution, login_type, location)
-            VALUES (?, ?, ?, ?)
-        `, [user_id, solution, login_type, location]);
+            INSERT INTO user_configs (user_id, solution, login_type, location, theme_colour, button_colour, logo)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [user_id, solution, login_type, location].concat(THEME_FIELDS.map(k => theme.values[k] || null)));
         
         saveDatabase();
         
@@ -201,6 +218,12 @@ app.post('/api/config', (req, res) => {
 app.put('/api/config/:userId', (req, res) => {
     const { solution, login_type, location } = req.body;
     const userId = req.params.userId;
+    // Only the colour and logo fields the body names are changed, so a client
+    // that knows nothing of them can't wipe them.
+    const theme = TITheme.normalise(req.body);
+    if (theme.errors.length) {
+        return res.status(400).json({ error: theme.errors[0], errors: theme.errors });
+    }
     
     try {
         // Check if exists
@@ -213,11 +236,12 @@ app.put('/api/config/:userId', (req, res) => {
             return res.status(404).json({ error: 'User ID not found' });
         }
         
+        const named = THEME_FIELDS.filter(k => k in theme.values);
         db.run(`
             UPDATE user_configs 
-            SET solution = ?, login_type = ?, location = ?, updated_at = datetime('now')
+            SET solution = ?, login_type = ?, location = ?, ${named.map(k => k + ' = ?, ').join('')}updated_at = datetime('now')
             WHERE user_id = ?
-        `, [solution, login_type, location, userId]);
+        `, [solution, login_type, location].concat(named.map(k => theme.values[k]), [userId]));
         
         saveDatabase();
         
