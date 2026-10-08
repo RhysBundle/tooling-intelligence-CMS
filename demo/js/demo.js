@@ -319,6 +319,29 @@
       : (state.sequence && state.sequence.playback_mode) || 'auto';
     clearScreen();
     setTone(PARAMS.get('tone') === 'off' ? null : screen && screen.tone);
+    setTheme(config);
+  }
+
+  // The customer's colours and logo on the device screens, from the config's
+  // theme_colour, button_colour and logo (see themeVars in screens.js). The
+  // login screen is the render's own frame, so it keeps the device's colours.
+  // A logo that does not load shows as a labelled box, so a wrong path is seen
+  // rather than quietly showing TI's.
+  var DEFAULT_LOGO = window.TIScreens.logo;
+  function setTheme(config) {
+    var vars = window.TIScreens.themeVars(config);
+    window.TIScreens.THEME_VARS.forEach(function (name) {
+      if (vars[name]) screenEl.style.setProperty(name, vars[name]);
+      else screenEl.style.removeProperty(name);
+    });
+    var logo = String(config.logo || '').trim();
+    window.TIScreens.logo = logo || DEFAULT_LOGO;
+    window.TIScreens.logoMissing = null;
+    if (!logo) return;
+    var run = state.run;
+    var img = new Image();
+    img.onerror = function () { if (run === state.run) window.TIScreens.logoMissing = logo; };
+    img.src = logo;
   }
 
   // The render's colour change, applied to the HTML screens. See media.js.

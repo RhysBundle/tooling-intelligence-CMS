@@ -11,7 +11,8 @@
  * takes the router bit after the typed login. STEUART runs Steuart's
  * Example 1 in full; its steps without a screen yet show a labelled
  * placeholder. TI_EXAMPLE_1 to 3 are Steuart's three examples, as testers
- * see them. TI has no sequence, so it stops after login as before.
+ * see them. BRANDED is test1's run, to show a customer's colours and logo.
+ * TI has no sequence, so it stops after login as before.
  */
 window.TI_SEQUENCES = {
   test1: {
@@ -157,6 +158,24 @@ window.TI_SEQUENCES = {
       { type: 'scale_transaction', params: { action: 'take' }, text: { weight: '1.248 kg', message: 'Place the items on the scale.' }, dwell_ms: null },
       { type: 'transaction_confirmation', params: {}, text: { message: 'Taken successfully' }, dwell_ms: null },
       { type: 'logout', params: {}, text: { message: 'Goodbye, Enjoy your safe nuclear plans' }, dwell_ms: null }
+    ]
+  },
+
+  // test1's run, for the colours and logo in its config
+  BRANDED: {
+    user_id: 'BRANDED',
+    name: 'M10 plug gauge take and return, branded',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
     ]
   }
 };

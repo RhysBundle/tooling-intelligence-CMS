@@ -88,6 +88,7 @@ Note the render's screen is a 16:9 version of the 1024x768 artwork: centred item
 | TI_EXAMPLE_1 | Steuart's Customer Example 1: typed login with password, three allocation codes (list, list, barcode), M10 gauge with quantity and take, then an end mill take (CNC machine shop) |
 | TI_EXAMPLE_2 | Steuart's Customer Example 2: a product kit, one search and select, then four takes (warehouse, barcode) |
 | TI_EXAMPLE_3 | Steuart's Customer Example 3: RFID login, three allocation codes, a lot managed dust mask with its lot number, take (SupplySystem, cleanroom) |
+| BRANDED | test1's run, with a customer's colours and a placeholder logo on the screens (see Customer colours and logo) |
 
 The three TI_EXAMPLE IDs are Steuart's own customer examples, step for step, from `examples/steuart-example-sequences.json`, for testers. His lists name the steps and login types only, so the products, search terms, prompts and lot number were chosen from the catalogue and the phase 1 screens. "Info window enter quantity" in Example 1 is the quantity screen. Their configs are in the demo, the local CMS and the SAGA CMS, not the live one.
 
@@ -141,7 +142,8 @@ Typing goes as it does on the device and in the reference videos: the cursor tap
 - FIND and the typed login use the keyboard (05_CheckOut_5, 05_CheckOut_2, the login one labelled User ID). Enter Quantity uses the number pad (09_TakeButton_7).
 - A capital is typed with Shift, a run of capitals with Caps Lock, which stays red while it is on; the letter keys show capitals while either is on. A character with no key on the keyboard still appears.
 - Key to key moves take 160 to 420ms and a key shows pressed for 150ms (`KEY_*` in `js/demo.js`), so typing "Router" takes about 4s from the tap to the screen coming back.
-- Laid out from the device's own `keyboard-international.bmp` and `keyboard-num.bmp` and checked against the artwork with `tools/screen-check.html` (keys within 1 to 2px). Widened like the other screens: the entry panel and key tray stretch, so the keys get wider, and the button groups and number pad stay on the right edge. The concrete is `assets/img/keyboard-bg.jpg`, made from the empty part of `keyboard-num.bmp`, mirrored to fill the screen.
+- Laid out from the device's own `keyboard-international.bmp` and `keyboard-num.bmp` and checked against the artwork with `tools/screen-check.html` (keys within 1 to 2px). Widened like the other screens: the entry panel and key tray stretch, so the keys get wider, and the button groups and number pad stay on the right edge.
+- The device puts the keyboard on concrete. Here it sits on the screens' own background colour, so a customer's `theme_colour` carries on under it, and pressed keys take their `button_colour`.
 - Switch Keyboard, Clear, Backspace, Cancel and AltGr are drawn but never pressed.
 
 ### Take and return clips
@@ -170,7 +172,27 @@ The screens use the system's Arial first, because the artwork is set in Arial, a
 
 Render tone: the render changes the colours of the screen it shows. Next to the login artwork, its greys come out darker (#333 near black, #f4f4f4 as #eaeaea) and its reds duller. The HTML screens get the same change through an SVG filter in `index.html` (saturation 0.7, then gamma 2.2), so the cut from the zoom's last frame does not jump in brightness. The values are `tone` under `login_screen` in `js/media.js`, fitted to the placeholder zoom, so they need fitting again when the real zoom lands. `?tone=off` shows the screens in the artwork's own colours.
 
-The logo on every screen is Tooling Intelligence's. The artwork has SupplyPro's, and one screen says "SupplyVend"; neither is copied.
+The logo on every screen is Tooling Intelligence's unless the config gives its own. The artwork has SupplyPro's, and one screen says "SupplyVend"; neither is copied.
+
+### Customer colours and logo
+
+Three optional config fields in `data/configs.js` dress the device screens in a customer's brand. They are in the demo only, not the CMS yet.
+
+| Field | What it changes |
+| --- | --- |
+| `theme_colour` | the screen behind the white panel, the title bar, and under the keyboard |
+| `button_colour` | every button, the line under the title bar, and pressed keys on the keyboard |
+| `logo` | the logo in the title bar, in place of TI's. A path from the demo folder; keep the files in `assets/img/logos/` |
+
+Colours are hex, such as `'#3d6b99'`. The device's gradients and edges are worked out from the one colour, in the same steps as its own red and grey (`themeVars` in `js/screens.js`), and text turns dark on a light colour. Leave a field out, or give something that is not a hex code, and the device's own colour stays.
+
+The logo fits the box TI's fills: 45px high in artwork px, up to 420px wide, from the right. PNG with transparency or SVG works best, white or light for a dark title bar. A logo that doesn't load shows a dashed box saying "Logo not found" with the path, so a typo shows rather than falling back to TI's. `assets/img/logos/sample-logo.svg` is a placeholder for the BRANDED test config.
+
+What stays as it is:
+
+- The render tone applies to the customer's colours as it does to the device's, so they show darker and duller than the hex. `?tone=off` shows them as given.
+- The zoom and login clip and the log out screen are the render's own frames, so they keep the device's red and grey and TI's logo. The colours change when the first screen after login cuts in.
+- The knob icons, the red X on FIND, the T and R pips, the message box's lavender and the blue picked outline are the device's own signals, not its theme, so they don't change.
 
 ## Layout
 

@@ -10,7 +10,12 @@
    scaled by 1080/768 = 1.40625 into the zoom clip's 1920x1080 frame.
 
    screen-check.html sets --scr-w to 1024px and --scr-s to 1, which gives back
-   the artwork's own layout to check against. */
+   the artwork's own layout to check against.
+
+   A customer's colours (theme_colour and button_colour in their config) come
+   in as the --scr-* and --btn-* variables, set on #screen by demo.js and
+   worked out in TIScreens.themeVars. Each var() falls back to the device's own
+   grey or red, so a config without them looks exactly as the artwork. */
 
 .screen { position: absolute; inset: 0; overflow: hidden; }
 .screen[hidden] { display: none; }
@@ -25,7 +30,7 @@
   position: absolute; left: 0; top: 0;
   width: var(--scr-w, 1365.333px); height: 768px;
   transform: scale(var(--scr-s, 1.40625)); transform-origin: 0 0;
-  overflow: hidden; background: #3e3e3e; color: #333;
+  overflow: hidden; background: var(--scr-bg, #3e3e3e); color: #333;
   font-family: Arial, 'Arimo', Helvetica, sans-serif; font-size: 20px; line-height: 1;
   white-space: nowrap;
 }
@@ -37,11 +42,17 @@
 /* Text boxes use line-height 1, so a box's top is its baseline less 0.85em. */
 
 /* ---------- Chrome ---------- */
-.scr-title { position: absolute; left: 0; right: 0; top: 0; height: 76px; background: #393939; }
-.scr-title::before { content: ''; position: absolute; left: 12px; top: 19px; width: 3px; height: 43px; background: #585858; }
-.scr-title-text { position: absolute; left: 28px; top: 23px; font-size: 34px; color: #fff; }
-.scr-logo { position: absolute; right: 18px; top: 17px; height: 45px; }
-.scr-redline { position: absolute; left: 0; right: 0; top: 76px; height: 5px; background: linear-gradient(#a5262c 0 1px, #d5161f 1px 4px, #812e32 4px); }
+.scr-title { position: absolute; left: 0; right: 0; top: 0; height: 76px; background: var(--scr-title, #393939); }
+.scr-title::before { content: ''; position: absolute; left: 12px; top: 19px; width: 3px; height: 43px; background: var(--scr-title-mark, #585858); }
+.scr-title-text { position: absolute; left: 28px; top: 23px; font-size: 34px; color: var(--scr-title-text, #fff); }
+/* A customer's logo is fitted into the box the TI logo fills, from the right */
+.scr-logo { position: absolute; right: 18px; top: 17px; height: 45px; max-width: 420px; object-fit: contain; object-position: right center; }
+.scr-logo-missing {
+  height: 45px; padding: 0 10px; box-sizing: border-box; border: 2px dashed; border-radius: 4px;
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-end; gap: 3px;
+  font-size: 13px; color: var(--scr-title-text, #fff); opacity: .75;
+}
+.scr-redline { position: absolute; left: 0; right: 0; top: 76px; height: 5px; background: linear-gradient(var(--btn-line-a, #a5262c) 0 1px, var(--btn-line, #d5161f) 1px 4px, var(--btn-line-b, #812e32) 4px); }
 
 .scr-panel {
   position: absolute; left: 17px; right: 174px; top: 101px; height: 647px;
@@ -49,12 +60,12 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .35), 1px 3px 8px rgba(0, 0, 0, .55);
 }
 
-/* Red buttons, on the rail and in the panel */
+/* Red buttons, on the rail and in the panel, or the customer's button_colour */
 .scr-btn {
   position: absolute; display: flex; align-items: center; justify-content: center; text-align: center;
-  border: 1px solid #5d2a29; border-top-color: #7b2e31; border-radius: 3px;
-  background: linear-gradient(#bd1c22, #9b1a1d 55%, #7c1818);
-  color: #fff; font-weight: 700;
+  border: 1px solid var(--btn-edge, #5d2a29); border-top-color: var(--btn-edge-top, #7b2e31); border-radius: 3px;
+  background: linear-gradient(var(--btn-top, #bd1c22), var(--btn-mid, #9b1a1d) 55%, var(--btn-bottom, #7c1818));
+  color: var(--btn-text, #fff); font-weight: 700;
 }
 .scr-rail-btn { right: 13px; width: 150px; height: 54px; padding-top: 3px; font-size: 19px; line-height: 19px; letter-spacing: -.3px; }
 /* Admin Menu and Logout are set larger than the buttons above them */
@@ -211,9 +222,9 @@
    Measured off the device's keyboard-international.bmp and keyboard-num.bmp
    and the artwork (05_CheckOut_5B, 09_TakeButton_7). Widened like the other
    screens: the entry panel and the key tray stretch, so the keys get wider,
-   and the button groups and number pad stay on the right edge. The concrete
-   is keyboard-bg.jpg, made from the empty part of keyboard-num.bmp. */
-.kbd { background: #c9c9c9 url(../assets/img/keyboard-bg.jpg) 0 0 / 100% 100%; }
+   and the button groups and number pad stay on the right edge. The device
+   puts them on concrete; here they sit on the screen's own background, so a
+   customer's theme_colour carries on under the keyboard. */
 .kbd-panel { position: absolute; left: 14px; right: 325px; top: 77px; height: 140px; box-sizing: border-box; border: 1px solid #a6a8ab; background: #fff; }
 .kbd-label { position: absolute; left: 25px; top: 21px; font-size: 26px; }
 .kbd-field {
@@ -242,8 +253,9 @@
 }
 .kbd-row .kbd-key { position: relative; }
 .kbd.is-upper .kbd-letter { text-transform: uppercase; }
-/* Pressed, and Shift or Caps Lock while on, as BtnLetterNumberDown.bmp */
-.kbd-key.is-pressed, .kbd-key.is-on { background: linear-gradient(#b92125, #731817); }
+/* Pressed, and Shift or Caps Lock while on, as BtnLetterNumberDown.bmp, in
+   the button colour */
+.kbd-key.is-pressed, .kbd-key.is-on { background: linear-gradient(var(--key-on-top, #b92125), var(--key-on-bottom, #731817)); color: var(--btn-text, #fff); }
 
 /* Number pad, the 09_TakeButton_7 layout. Its field is the grey screen field. */
 .kbd-num .kbd-label { left: 31px; top: 15px; font-size: 24px; letter-spacing: .6px; }
