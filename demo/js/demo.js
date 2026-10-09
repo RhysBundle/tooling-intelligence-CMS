@@ -275,10 +275,12 @@
     state.zoomLogin = !!zoomLogin;
     slots.zoom = createSlot(zoomMedia, zoomLogin || (MEDIA.zoom || {})[sol], 'zoom');
     // Loaded now so they are ready mid-sequence. Each product has its own,
-    // so these skip the stand-in.
+    // so these skip the stand-in. A user ID can have its own too
+    // (custom_action in media.js).
     var action = MEDIA.action || {};
-    slots.take = createSlot(takeMedia, (action.take || {})[config.solution], 'take');
-    slots['return'] = createSlot(returnMedia, (action['return'] || {})[config.solution], 'return');
+    var custom = (MEDIA.custom_action || {})[String(config.user_id).toLowerCase()] || {};
+    slots.take = createSlot(takeMedia, custom.take || (action.take || {})[config.solution], 'take');
+    slots['return'] = createSlot(returnMedia, custom['return'] || (action['return'] || {})[config.solution], 'return');
 
     resetPan(env);
     state.slideBy = (env.slide_by || {})[sol];

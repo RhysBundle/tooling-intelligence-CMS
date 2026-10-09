@@ -169,5 +169,16 @@ window.TI_MEDIA = {
       smartdrawer:  { label: 'SmartDrawer return',  video: 'assets/video/return-smartdrawer.mp4',  poster: 'assets/img/return-smartdrawer-start.jpg' },
       supplysystem: { label: 'SupplySystem return', video: 'assets/video/return-supplysystem.mp4', poster: 'assets/img/return-supplysystem-start.jpg' }
     }
+  },
+
+  // Trial (9 Oct): take and return clips made for one user ID, with its
+  // colours, logo and product swapped onto the device screen in every frame
+  // of the render. Keyed by user ID in lower case; used in place of the
+  // product's own clip. BRANDED's take only, made for its config and
+  // sequence (M10 plug gauge, A-C012), so it won't match if those change.
+  custom_action: {
+    branded: {
+      take: { label: 'SmartDrawer take, BRANDED', video: 'assets/video/take-smartdrawer-branded.mp4', poster: 'assets/img/take-smartdrawer-branded-start.jpg' }
+    }
   }
 };

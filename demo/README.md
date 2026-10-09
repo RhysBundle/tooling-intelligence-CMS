@@ -62,6 +62,7 @@ Every file is listed in `js/media.js`. A missing file shows a labelled placehold
 | Barcode login | `video/login-barcode.mp4` | The same |
 | SmartDrawer take and return | `video/take-smartdrawer.mp4`, `video/return-smartdrawer.mp4`, each with `img/*-start.jpg` | Done |
 | SupplySystem take and return | `video/take-supplysystem.mp4`, `video/return-supplysystem.mp4`, each with `img/*-start.jpg` | Done |
+| BRANDED's own take (trial) | `video/take-smartdrawer-branded.mp4`, with `img/take-smartdrawer-branded-start.jpg` | Trial, 9 Oct (see Take and return clips) |
 
 The files in `assets/` are web copies of the originals in `GDrive-example/Videos`: H.264, CRF 22, audio removed (the zoom and action clips' audio tracks were silent), faststart. Stills converted from PNG to JPEG. The take and return clips come from `Videos/ActionVideos/Adjusted`: `*TakeOut.mp4` is take, `*CheckIn.mp4` is return, and `SupplyVend*` is SupplySystem.
 
@@ -199,6 +200,8 @@ When it plays (`actionClipAfter` in `js/demo.js`):
 - A Scale step is done on screen, so a take or return through one has no clip.
 
 The clip fades in on its own slide, as the login clip does, because it starts and ends at a different framing from the zoom. The next step's screen fades back in after it. The clip's length stands in for a door step's dwell, and step-through mode does not wait for Next during a clip.
+
+Trial (9 Oct): a user ID can have take and return clips of its own, `custom_action` in `js/media.js`, used in place of its product's. BRANDED has a take clip made from SmartDrawer's, with the device screen swapped in every frame for ours in BRANDED's colours and logo, showing its product (M10 plug gauge) and door (A-C012). The swap tracks the render's screen against the phase 1 artwork it shows (05_CheckOut_8, then 9 from frame 172), matches the render's tone, focus and motion blur frame by frame, keeps the glass's reflections and leaves the hand in front where it presses OK. It is made for that config and sequence, so change either and it no longer matches. Nothing makes these from the CMS yet; the scripts are in `Claude outputs/screen-swap-trial/scripts` in the project folder, not in the repo.
 
 Product details (name, part number, menu number, unit of issue, quantity, door code) come from `shared/catalogue.js`. A search that matches fewer than six products is padded with the rest of their categories, so the list never looks empty. Thumbnails are placeholder line drawings until TI send photos.
 
