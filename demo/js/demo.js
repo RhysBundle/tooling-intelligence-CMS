@@ -42,7 +42,10 @@
   var MOVE_MAX_MS = 900;
   var MOVE_MS_PER_PX = 0.4;      // device px, so a move across the panel is ~800ms
   var CURSOR_FADE_MS = 250;      // matches .cursor in demo.css
-  var CURSOR_REST = { x: 1100, y: 880 }; // where it first shows, low on the panel
+  // Where it first shows, low on the panel, as a share of the device's screen
+  // (1100, 880 on SmartDrawer's, which fills the frame)
+  var CURSOR_REST = { x: 1100 / 1920, y: 880 / 1080 };
+  var STAGE_SCALE = 1280 / 1920;  // the device layer's 1920x1080 px onto the stage
   // The on-screen keyboard. Key to key moves are quicker than the cursor's
   // other moves, as a typist's are.
   var KEY_MOVE_MIN_MS = 160;
@@ -287,24 +290,28 @@
       panImg.removeAttribute('src');
     }
 
-    var screen = (MEDIA.login_screen || {})[sol];
+    // The login screen, and where the device's screen sits, for the framing
+    // the zoom ends on. A zoom and login clip can name its own (see media.js).
+    var screen = (MEDIA.login_screen || {})[(zoomLogin && zoomLogin.login_screen) || sol];
+    state.loginScreen = screen;
     device.hidden = true;
     fieldText.textContent = '';
     field.classList.remove('is-typing');
     // With no custom welcome message, the clip's own last frame is used, so
     // the cut from video to HTML is invisible. A custom message uses the
     // clean still with the text set in HTML. A zoom and login clip ends on
-    // that same frame, so it always gets the frame.
+    // its own last frame ('end'), or on the zoom's where it has none.
     if (screen) {
       if (config.welcome_message && !state.zoomLogin) {
         plate.src = screen.clean;
         welcome.textContent = config.welcome_message;
       } else {
-        plate.src = screen.frame;
+        plate.src = (zoomLogin && zoomLogin.end) || screen.frame;
         welcome.textContent = '';
       }
     }
     state.hasScreen = !!screen;
+    setGeometry(screen);
 
     // The sequence that plays after login, from the CMS or the demo's own
     // files (see the user ID lookup). ?mode=step or ?mode=auto overrides the
@@ -347,10 +354,67 @@
   }
 
   // The render's colour change, applied to the HTML screens. See media.js.
+  // A tone is a gamma, or a curve of [in, out] levels from 0 to 255.
   function setTone(tone) {
     toneSaturation.setAttribute('values', tone ? tone.saturation : 1);
-    toneGamma.forEach(function (f) { f.setAttribute('exponent', tone ? tone.gamma : 1); });
+    toneGamma.forEach(function (f) {
+      if (tone && tone.curve) {
+        f.setAttribute('type', 'table');
+        f.setAttribute('tableValues', curveTable(tone.curve));
+      } else {
+        f.setAttribute('type', 'gamma');
+        f.setAttribute('exponent', tone ? tone.gamma : 1);
+      }
+    });
     screenEl.classList.toggle('is-toned', !!tone);
+  }
+
+  // The curve as an SVG table: 33 evenly spaced levels, joined straight.
+  function curveTable(points) {
+    var out = [];
+    for (var k = 0; k <= 32; k++) {
+      var x = Math.min(255, k * 8);
+      var j = 1;
+      while (j < points.length - 1 && points[j][0] < x) j++;
+      var a = points[j - 1], b = points[j];
+      var y = a[1] + (b[1] - a[1]) * (x - a[0]) / ((b[0] - a[0]) || 1);
+      out.push((y / 255).toFixed(4));
+    }
+    return out.join(' ');
+  }
+
+  // Where the device's screen sits in the zoom's last frame. SmartDrawer's
+  // fills it, widened to 16:9 (see css/screens.css), which is the CSS as it
+  // stands. SupplySystem's is the 1024x768 UI as it is, smaller and off
+  // centre ('screen' in media.js), so the screens, the log out message, the
+  // cursor's first place and the Next pill move and scale with it. The pill
+  // keeps its size against the device's screen.
+  var SMARTDRAWER_SCALE = 1080 / 768;
+  function setGeometry(screen) {
+    var g = screen && screen.screen;
+    var w = g ? 1024 * g.scale : 1920, h = g ? 768 * g.scale : 1080;
+    var left = g ? g.left : 0, top = g ? g.top : 0;
+    var b = (g && g.bleed) || [0, 0, 0, 0];
+    var props = {
+      left: (left - b[3]) + 'px', top: (top - b[0]) + 'px', right: 'auto', bottom: 'auto',
+      width: (w + b[1] + b[3]) + 'px', height: (h + b[0] + b[2]) + 'px',
+      '--scr-w': '1024px', '--scr-s': g && g.scale, '--scr-x': b[3] + 'px', '--scr-y': b[0] + 'px'
+    };
+    Object.keys(props).forEach(function (k) {
+      if (g) screenEl.style.setProperty(k, props[k]); else screenEl.style.removeProperty(k);
+    });
+    var wm = screen && screen.welcome;
+    welcome.style.left = wm ? wm.left + 'px' : '';
+    welcome.style.top = wm ? wm.top + 'px' : '';
+    welcome.style.width = wm ? wm.width + 'px' : '';
+    welcome.style.fontSize = wm ? wm.size + 'px' : '';
+    welcome.style.lineHeight = wm ? wm.line + 'px' : '';
+    state.cursorRest = { x: left + CURSOR_REST.x * w, y: top + CURSOR_REST.y * h };
+    // The pill is centred on the title bar, which is 76 artwork px high
+    var k = g ? g.scale / SMARTDRAWER_SCALE : 1;
+    stepNext.style.setProperty('--next-x', g ? ((left + 512 * g.scale) * STAGE_SCALE) + 'px' : '');
+    stepNext.style.setProperty('--next-top', g ? ((top + 38 * g.scale) * STAGE_SCALE - 22 * k) + 'px' : '');
+    stepNext.style.setProperty('--next-s', g ? k : '');
   }
 
   function begin() {
@@ -674,7 +738,8 @@
   /* ---------- The cursor ----------
    * Goes to whatever is typed into, picked or pressed next, so a viewer can
    * follow the automatic screens. Positions are in the device layer's
-   * 1920x1080 px. It shows at CURSOR_REST the first time it is needed, and
+   * 1920x1080 px. It shows at CURSOR_REST, on the device's screen, the
+   * first time it is needed, and
    * goes when the operator logs out or walks to the drawer for a clip.
    */
   // quick: a hop between keys on the on-screen keyboard
@@ -682,7 +747,7 @@
     var to = el && state.cursorOn ? cursorPoint(el) : null;
     if (!to) { done(); return; }
     if (!state.cursorAt) {
-      placeCursor(CURSOR_REST, 0);
+      placeCursor(state.cursorRest, 0);
       cursor.classList.add('is-shown');
       later(CURSOR_FADE_MS, function () { moveTo(el, done, quick); });
       return;
@@ -735,7 +800,7 @@
       moveTo(btn, function () {
         press(btn, function () {
           hideCursor();
-          var screen = (MEDIA.login_screen || {})[state.mediaSolution];
+          var screen = state.loginScreen;
           var message = String((step.text || {}).message || '');
           if (screen) {
             plate.src = message ? screen.clean : screen.frame;

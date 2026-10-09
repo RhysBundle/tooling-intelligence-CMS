@@ -7,8 +7,8 @@ Replaces the Storyline file. Open `index.html` in Chrome or Edge, or serve the f
 1. Title screen, Start button
 2. User ID screen. Looks the ID up in the CMS when the demo is served over http(s), then in `data/configs.js`, ignoring case (see User IDs and the CMS).
 3. Environment clip for the customer's `location`, ending on the two products
-4. The hand-off to the product (see below)
-5. The zoom and login clip for the customer's `login_type`: one clip that zooms onto the screen, logs in and ends on the login screen's frame. SupplySystem configs use SmartDrawer's for now (see `stand_in`).
+4. The hand-off to the product (see below). SupplySystem has no slide yet, so its environment crossfades straight to its zoom.
+5. The zoom and login clip for the customer's `solution` and `login_type`: one clip that zooms onto the screen and logs in (see Zoom and login clips).
 6. Only where there is no such clip: the zoom on its own, then the device login screen in HTML on the zoom's last frame
    - Typed logins: the user ID is typed on the on-screen keyboard and Enter is pressed
    - Badge and barcode logins: the physical login clip plays
@@ -53,8 +53,9 @@ Every file is listed in `js/media.js`. A missing file shows a labelled placehold
 | User ID background | none, CSS gradient | Done |
 | Environments x6 | `video/env-*.mp4`, with `img/env-*-start.jpg` and `img/env-*-slide.jpg` | Done |
 | SmartDrawer zoom and login, by login type | `video/zoom-login-smartdrawer-barcode.mp4`, `-rfid.mp4`, `-userid.mp4` (both typed logins), each with `img/*-start.jpg` | ROUGH renders |
+| SupplySystem zoom and login, by login type | `video/zoom-login-supplysystem-barcode.mp4`, `-rfid.mp4`, `-userid.mp4` (both typed logins), each with `img/*-start.jpg` and `img/*-end.jpg`; log out stills `img/login-supplysystem-clean.jpg`, `-barcode-clean.jpg` | Phase 1 renders, cut by `tools/build-supplysystem-login.py` |
 | SmartDrawer zoom | `video/zoom-smartdrawer.mp4` | Placeholder; only used without a zoom and login clip |
-| SupplySystem zoom, or zoom and login | `video/zoom-supplysystem.mp4` | Needed |
+| SupplySystem zoom | `video/zoom-supplysystem.mp4` | Not needed while every login type has a zoom and login clip |
 | RFID login | `video/login-rfid.mp4` | Only used without a zoom and login clip, so not at present |
 | Barcode login | `video/login-barcode.mp4` | The same |
 | SmartDrawer take and return | `video/take-smartdrawer.mp4`, `video/return-smartdrawer.mp4`, each with `img/*-start.jpg` | Done |
@@ -74,7 +75,7 @@ All on one slide (`#slide-scene`), as layers:
 
 `tools/build-slides.py` builds `assets/img/env-*-slide.jpg` and works out `ext` and `slide_by` for `js/media.js`. The extended images are not pixel copies of the End frames (each is rescaled by 0.1 to 0.6 percent and shifted by part of a pixel, and the F1 one is about 7 levels darker), so the tool registers each one to its End frame, resamples and colour-matches the extension, and feathers it into the exact End.png over 96px. Rerun it if any render changes.
 
-SupplyVend: the same, sliding left, once there are images with the right side extended and a SupplyVend zoom clip. Until then SupplySystem configs (such as `Ferarri`) use the SmartDrawer slide, zoom and login screen as a stand-in; see `stand_in` in `js/media.js`.
+SupplySystem: the same, sliding left, once there are slide images with the right side extended. Until then a SupplySystem config (such as `Ferarri`) has no `slide_by`, so its environment's last frame crossfades straight to its zoom and login clip. `stand_in` in `js/media.js` can still point one product at another's media; it is empty now.
 
 The slide runs even when the computer has reduced motion turned on (Windows: animation effects off), because it is the content, not decoration.
 
@@ -83,6 +84,24 @@ The slide runs even when the computer has reduced motion turned on (Windows: ani
 `zoom_login` in `js/media.js` holds one clip per product and login type that zooms from the product onto its screen and logs in: barcode card, RFID badge, or the User ID typed on the on-screen keyboard (shown as ****), each followed by the device's Login Allocation Code screen. Where one exists it replaces the zoom, the HTML login screen and the login clip. All three end on exactly the zoom's last frame (`zoom-smartdrawer-end.jpg`, within 2 levels of 255), so the device layer goes on over it, holds 600ms (`LANDED_MS`) and the sequence's first screen cuts in.
 
 They are ROUGH renders from `GDrive-example/Videos/ActionVideos/SmartDrawer`. Like the placeholder zoom, they start on the SmartDrawer in a grey studio, so the crossfade from the environment's slide image changes background. They end on the login screen even though the clip has logged in. The UserIDPassword file there is a copy of UserID, so both typed logins use one clip.
+
+### SupplySystem
+
+SupplySystem's come from the phase 1 renders in `GDrive-example/Videos/ActionVideos/SupplyVend` (`CV_RFID_SignIn`, `CV_Barcode`, `SV_UserID`). Each of those zooms onto the cabinet's screen, logs in and carries on into a whole phase 1 transaction, so `tools/build-supplysystem-login.py` cuts each at the first moment after the login when the camera has settled and the hand has left the frame:
+
+| Login | Ends at | On |
+| --- | --- | --- |
+| RFID | 5.0s | Items checked out by you |
+| Barcode | 6.8s | Select Product, after the device's Login Allocation Code screen |
+| Typed (both) | 9.3s | Select Product, after the User ID is typed on the keyboard |
+
+They end on a screen that has already moved on, not on the login screen, so each has its own last frame (`end` in `js/media.js`) for the sequence's first screen to cut in over. Where the hand's reflection was still in the glass under the screen at the cut (typed, barcode), the tool fades a patch of clean glass in over the last few frames.
+
+The SupplyVend's screen shows the 1024x768 UI as it is, not widened, smaller and off centre: top left at 549, 227.9 in the frame, 0.834 scale (fitted against `15_Search_4` and `SupplySystem_Items` to within 2px). The barcode clip's camera ends 43.9px higher at the same scale. So for SupplySystem demo.js moves `#screen` onto it, sets `--scr-w` to 1024px, and moves the log out message, the cursor's first place and the Next pill with it (`setGeometry`, from `screen` and `welcome` under `login_screen` in `js/media.js`). The render's UI runs a few px past the artwork's edges, so the HTML screen bleeds that far in the screen's own background.
+
+The render tone is darker than SmartDrawer's and not a plain gamma (white comes out at 208, #3e3e3e at 30), so it is a curve of levels, set as an SVG table.
+
+The renders' login screen says "Welcome to SmartDrawer at Tooling intelligence", and it is readable as the camera arrives, before the login. No clip shows the login screen at the settled framing without a hand on it, so the log out stills are put together from frames just before the login and the clip's hand-free end, with that text taken out; the log out message goes there. The tool's notes say how. Rerun the tool if any of these renders change.
 
 ## Login screen
 
@@ -97,7 +116,7 @@ The sequence comes from the CMS or from `data/sequences.js` (see User IDs and th
 | User ID | Sequence |
 | --- | --- |
 | test1 | search "m10", select the M10 plug gauge, take, quantity 1, take clip, select it again, return, return clip, log out |
-| Ferarri | the same, so it shows the SupplySystem clips (the screens are SmartDrawer stand-ins) |
+| Ferarri | the same on SupplySystem: its typed zoom and login, the screens at the device's own 4:3 shape, its take and return clips |
 | DEMO | search, select the router bit, take, quantity 1, take clip, log out, after the typed login |
 | STEUART | Steuart's Example 1 in full; its door-open step plays the take clip |
 | TI | none, so the run stops after login as before |
@@ -117,7 +136,7 @@ Each step:
 3. It holds for its dwell from the CMS (default 3s), or in step-through mode until Next.
 4. Its exit plays: the cursor moves to the button that leads on and clicks it (250ms), and the next step cuts in.
 
-Every event type now has a screen or a clip. All screens are SmartDrawer's; SupplySystem uses them as stand-ins.
+Every event type now has a screen or a clip. Both products use the same screens, as the phase 1 artwork for both is the same UI: SmartDrawer's widened to 16:9, SupplySystem's at the device's own 4:3 (see Zoom and login clips, SupplySystem).
 
 | Event type | Screen | Built from | What moves |
 | --- | --- | --- | --- |
@@ -164,7 +183,7 @@ Typing goes as it does on the device and in the reference videos: the cursor tap
 
 ### Take and return clips
 
-Each time an item is taken out, the take clip plays, and each time one is put back, the return clip plays. The clip is chosen by the config's `solution`, so SupplySystem customers get the SupplySystem clips even while their screens use the SmartDrawer stand-ins.
+Each time an item is taken out, the take clip plays, and each time one is put back, the return clip plays. The clip is chosen by the config's `solution`.
 
 When it plays (`actionClipAfter` in `js/demo.js`):
 
@@ -226,7 +245,7 @@ data/configs.js    customer configs, used when the CMS hasn't got the ID
 data/sequences.js  customer sequences, the same
 data/cms.js        which CMS to look user IDs up in
 assets/            fonts (Open Sans, Arimo), logo, video, img
-tools/             build-slides.py, pan-fit.json, screen-check.html; not packaged
+tools/             build-slides.py, pan-fit.json, build-supplysystem-login.py, screen-check.html; not packaged
 ../shared/         catalogue.js, event-types.js, sequence-validator.js, theme.js, from the CMS
 ```
 

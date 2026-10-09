@@ -3,22 +3,28 @@
    Sizes and positions were measured off the artwork and checked against it
    with tools/screen-check.html, to within a pixel or two.
 
-   The render shows that UI widened to 16:9, not stretched: the screen is
-   1365.33 artwork px wide instead of 1024 (1920 / 1.40625), items at the left
-   or right edge keep their distance from that edge, centred items stay
-   centred, and the panel stretches between them. Then the whole screen is
-   scaled by 1080/768 = 1.40625 into the zoom clip's 1920x1080 frame.
+   SmartDrawer's render shows that UI widened to 16:9, not stretched: the
+   screen is 1365.33 artwork px wide instead of 1024 (1920 / 1.40625), items at
+   the left or right edge keep their distance from that edge, centred items
+   stay centred, and the panel stretches between them. Then the whole screen
+   is scaled by 1080/768 = 1.40625 into the zoom clip's 1920x1080 frame.
 
-   screen-check.html sets --scr-w to 1024px and --scr-s to 1, which gives back
-   the artwork's own layout to check against.
+   SupplySystem's render shows the UI as it is, smaller and off centre, so for
+   it demo.js sets --scr-w to 1024px, --scr-s to its scale, and moves #screen
+   onto it (login_screen in js/media.js). screen-check.html sets --scr-w to
+   1024px and --scr-s to 1, which gives back the artwork's own layout to check
+   against.
 
    A customer's colours (theme_colour and button_colour in their config) come
    in as the --scr-* and --btn-* variables, set on #screen by demo.js and
    worked out in shared/theme.js. Each var() falls back to the device's own
    grey or red, so a config without them looks exactly as the artwork. */
 
-.screen { position: absolute; inset: 0; overflow: hidden; }
+.screen { position: absolute; inset: 0; overflow: hidden; background: var(--scr-bg, #3e3e3e); }
 .screen[hidden] { display: none; }
+/* Where the screen is wider than the UI (SupplySystem's bleed, see media.js),
+   the edge takes the colour of the screen that is up */
+.screen:has(> .scr-dim) { background: #9196ba; }
 
 /* The render darkens the screen it shows and dulls its reds (#333 comes out
    near black, #f4f4f4 as #eaeaea, the red buttons close to maroon). The filter
@@ -27,7 +33,7 @@
 .screen.is-toned { filter: url(#render-tone); }
 
 .scr {
-  position: absolute; left: 0; top: 0;
+  position: absolute; left: var(--scr-x, 0); top: var(--scr-y, 0);
   width: var(--scr-w, 1365.333px); height: 768px;
   transform: scale(var(--scr-s, 1.40625)); transform-origin: 0 0;
   overflow: hidden; background: var(--scr-bg, #3e3e3e); color: #333;

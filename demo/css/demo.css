@@ -200,8 +200,14 @@ body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -we
 }
 
 /* Step-through mode: Next sits centred in the device's title bar, the one
-   place that is empty on every screen. */
-.btn-next { top: 14px; width: 150px; height: 44px; border-radius: 22px; font-size: 18px; z-index: 8; }
+   place that is empty on every screen. Where the device's screen doesn't
+   fill the frame (SupplySystem), demo.js moves it and scales it with the
+   screen through these variables. */
+.btn-next {
+  left: var(--next-x, 50%); top: var(--next-top, 14px); width: 150px; height: 44px; border-radius: 22px; font-size: 18px; z-index: 8;
+  transform: translateX(-50%) scale(var(--next-s, 1)); transform-origin: 50% 0;
+}
+.btn-next:active { transform: translateX(-50%) translateY(1px) scale(var(--next-s, 1)); }
 .btn-next[hidden] { display: none; }
 
 /* ---------- Stub: next ---------- */
