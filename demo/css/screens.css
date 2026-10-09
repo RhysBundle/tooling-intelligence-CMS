@@ -9,11 +9,13 @@
    stay centred, and the panel stretches between them. Then the whole screen
    is scaled by 1080/768 = 1.40625 into the zoom clip's 1920x1080 frame.
 
-   SupplySystem's render shows the UI as it is, smaller and off centre, so for
-   it demo.js sets --scr-w to 1024px, --scr-s to its scale, and moves #screen
-   onto it (login_screen in js/media.js). screen-check.html sets --scr-w to
-   1024px and --scr-s to 1, which gives back the artwork's own layout to check
-   against.
+   That was the ROUGH SmartDrawer render, kept for the old login path. The
+   phase 1 renders used now show the UI as it is, smaller and off centre
+   (SupplySystem) or at an angle (SmartDrawer), so demo.js sets --scr-w to
+   1024px and --scr-s to 1 and maps #screen onto the render's screen with a
+   perspective transform (setGeometry, login_screen in js/media.js).
+   screen-check.html does the same without the transform, which gives back
+   the artwork's own layout to check against.
 
    A customer's colours (theme_colour and button_colour in their config) come
    in as the --scr-* and --btn-* variables, set on #screen by demo.js and
@@ -25,6 +27,12 @@
 /* Where the screen is wider than the UI (SupplySystem's bleed, see media.js),
    the edge takes the colour of the screen that is up */
 .screen:has(> .scr-dim) { background: #9196ba; }
+/* The login screen's bands, from a7login.bmp's edges: grey, red line, concrete, dark */
+.screen:has(> .scr-login) {
+  background:
+    linear-gradient(to right, #707070, #8a8a8a) 0 calc(var(--scr-y, 0px) + 87px) / 100% 422px no-repeat,
+    linear-gradient(#3d3d3d calc(var(--scr-y, 0px) + 82px), #d81b24 0 calc(var(--scr-y, 0px) + 87px), #3d3d3d 0 calc(var(--scr-y, 0px) + 509px), #2d2d2d 0);
+}
 
 /* The render darkens the screen it shows and dulls its reds (#333 comes out
    near black, #f4f4f4 as #eaeaea, the red buttons close to maroon). The filter
@@ -223,6 +231,26 @@
 @keyframes scale-shake { 50% { opacity: 0; } }
 .scr-scale-label { position: absolute; right: calc(50% - 3.5px); top: 355px; font-size: 30px; letter-spacing: .3px; }
 .scr-scale-field { top: 350px; }
+
+/* ---------- Login, on log out ----------
+   As 08_Search_1, on the device's own background (a7login.bmp). Only used
+   where the screen is the UI as it is, not widened (see setGeometry in
+   demo.js), so it is laid out at 1024 wide. */
+.scr-login-bg { position: absolute; left: 0; top: 0; width: 1024px; height: 768px; }
+.scr-login-msg {
+  position: absolute; left: 245.3px; top: 231.4px; width: 469.3px;
+  text-align: center; white-space: pre-line; font-size: 25px; line-height: 29.5px; color: #000;
+}
+.scr-login-label { position: absolute; left: 275.6px; top: 399.6px; font-size: 30.5px; }
+.scr-login-field { left: 272px; top: 440px; width: 417px; height: 43px; border-top-color: #b0b0b0; background: linear-gradient(#cccccc, #d0d0d0 18%, #838383); }
+.scr-login-enter { left: 762px; top: 560px; width: 181px; height: 75px; padding-top: 4px; font-size: 28px; }
+.scr-login-logo .scr-logo { left: 51px; top: 665px; right: auto; height: 54px; max-width: 232px; object-position: left center; }
+/* The labels aren't evenly spaced on the bar, so each is centred where the artwork has it */
+.scr-login-menu { position: absolute; left: 588px; top: 687px; width: 413px; height: 67px; background: #f4f4f4; font-size: 25px; }
+.scr-login-menu span { position: absolute; top: 25.2px; width: 120px; margin-left: -60px; text-align: center; }
+.scr-login-menu span:nth-child(1) { left: 68px; }
+.scr-login-menu span:nth-child(2) { left: 204px; }
+.scr-login-menu span:nth-child(3) { left: 341.5px; }
 
 /* ---------- On-screen keyboard and number pad ----------
    Measured off the device's keyboard-international.bmp and keyboard-num.bmp

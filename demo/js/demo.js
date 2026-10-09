@@ -280,7 +280,8 @@
     slots['return'] = createSlot(returnMedia, (action['return'] || {})[config.solution], 'return');
 
     resetPan(env.ext);
-    state.slideBy = (env.slide_by || {})[sol];
+    var slides = env.slide_by || {};
+    state.slideBy = sol in slides ? slides[sol] : slides[(MEDIA.slide_as || {})[sol]];
     state.panReady = false;
     if (env.slide && typeof state.slideBy === 'number') {
       panImg.onload = function () { state.panReady = true; };
@@ -383,38 +384,75 @@
     return out.join(' ');
   }
 
-  // Where the device's screen sits in the zoom's last frame. SmartDrawer's
-  // fills it, widened to 16:9 (see css/screens.css), which is the CSS as it
-  // stands. SupplySystem's is the 1024x768 UI as it is, smaller and off
-  // centre ('screen' in media.js), so the screens, the log out message, the
-  // cursor's first place and the Next pill move and scale with it. The pill
-  // keeps its size against the device's screen.
+  // Where the device's screen sits in the zoom's last frame: the frame
+  // positions of the 1024x768 UI's corners ('screen' under login_screen in
+  // media.js). Where there are none (the SmartDrawer login screen behind the
+  // HTML login), the screen fills the frame widened to 16:9, which is the
+  // CSS as it stands (see css/screens.css). Otherwise the UI is shown as it
+  // is, smaller and off centre (SupplySystem) or at an angle (SmartDrawer),
+  // so #screen is laid out at 1024x768 and mapped onto the corners with a
+  // perspective transform. The cursor's first place and the Next pill go
+  // with it; the pill keeps its size against the device's screen.
   var SMARTDRAWER_SCALE = 1080 / 768;
   function setGeometry(screen) {
     var g = screen && screen.screen;
-    var w = g ? 1024 * g.scale : 1920, h = g ? 768 * g.scale : 1080;
-    var left = g ? g.left : 0, top = g ? g.top : 0;
+    var H = g ? homography(g.corners) : null;
     var b = (g && g.bleed) || [0, 0, 0, 0];
     var props = {
-      left: (left - b[3]) + 'px', top: (top - b[0]) + 'px', right: 'auto', bottom: 'auto',
-      width: (w + b[1] + b[3]) + 'px', height: (h + b[0] + b[2]) + 'px',
-      '--scr-w': '1024px', '--scr-s': g && g.scale, '--scr-x': b[3] + 'px', '--scr-y': b[0] + 'px'
+      left: '0px', top: '0px', right: 'auto', bottom: 'auto',
+      width: (1024 + b[1] + b[3]) + 'px', height: (768 + b[0] + b[2]) + 'px',
+      'transform-origin': '0 0', transform: H && cssMatrix(H, -b[3], -b[0]),
+      '--scr-w': '1024px', '--scr-s': '1', '--scr-x': b[3] + 'px', '--scr-y': b[0] + 'px'
     };
     Object.keys(props).forEach(function (k) {
       if (g) screenEl.style.setProperty(k, props[k]); else screenEl.style.removeProperty(k);
     });
-    var wm = screen && screen.welcome;
-    welcome.style.left = wm ? wm.left + 'px' : '';
-    welcome.style.top = wm ? wm.top + 'px' : '';
-    welcome.style.width = wm ? wm.width + 'px' : '';
-    welcome.style.fontSize = wm ? wm.size + 'px' : '';
-    welcome.style.lineHeight = wm ? wm.line + 'px' : '';
-    state.cursorRest = { x: left + CURSOR_REST.x * w, y: top + CURSOR_REST.y * h };
+    state.cursorRest = H ? project(H, CURSOR_REST.x * 1024, CURSOR_REST.y * 768)
+      : { x: CURSOR_REST.x * 1920, y: CURSOR_REST.y * 1080 };
     // The pill is centred on the title bar, which is 76 artwork px high
-    var k = g ? g.scale / SMARTDRAWER_SCALE : 1;
-    stepNext.style.setProperty('--next-x', g ? ((left + 512 * g.scale) * STAGE_SCALE) + 'px' : '');
-    stepNext.style.setProperty('--next-top', g ? ((top + 38 * g.scale) * STAGE_SCALE - 22 * k) + 'px' : '');
-    stepNext.style.setProperty('--next-s', g ? k : '');
+    var mid = H && project(H, 512, 38);
+    var k = H ? Math.hypot(project(H, 522, 38).x - project(H, 502, 38).x, project(H, 522, 38).y - project(H, 502, 38).y) / 20 / SMARTDRAWER_SCALE : 1;
+    stepNext.style.setProperty('--next-x', H ? (mid.x * STAGE_SCALE) + 'px' : '');
+    stepNext.style.setProperty('--next-top', H ? (mid.y * STAGE_SCALE - 22 * k) + 'px' : '');
+    stepNext.style.setProperty('--next-s', H ? k : '');
+  }
+
+  // The perspective transform that takes the UI's corners, (0, 0) to
+  // (1024, 768), to the given frame positions, top left first and clockwise.
+  // As [a, b, c, d, e, f, g, h] for x' = (ax + by + c) / (gx + hy + 1), and so on.
+  function homography(corners) {
+    var src = [[0, 0], [1024, 0], [1024, 768], [0, 768]];
+    var A = [], B = [];
+    corners.forEach(function (p, i) {
+      var x = src[i][0], y = src[i][1];
+      A.push([x, y, 1, 0, 0, 0, -p[0] * x, -p[0] * y]); B.push(p[0]);
+      A.push([0, 0, 0, x, y, 1, -p[1] * x, -p[1] * y]); B.push(p[1]);
+    });
+    // Gaussian elimination with partial pivoting
+    for (var c = 0; c < 8; c++) {
+      var piv = c;
+      for (var r = c + 1; r < 8; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
+      var t = A[c]; A[c] = A[piv]; A[piv] = t; t = B[c]; B[c] = B[piv]; B[piv] = t;
+      for (r = 0; r < 8; r++) {
+        if (r === c) continue;
+        var f = A[r][c] / A[c][c];
+        for (var j = c; j < 8; j++) A[r][j] -= f * A[c][j];
+        B[r] -= f * B[c];
+      }
+    }
+    return B.map(function (v, i) { return v / A[i][i]; });
+  }
+
+  function project(H, x, y) {
+    var w = H[6] * x + H[7] * y + 1;
+    return { x: (H[0] * x + H[1] * y + H[2]) / w, y: (H[3] * x + H[4] * y + H[5]) / w };
+  }
+
+  // The transform as CSS, after moving the element by tx, ty (the bleed).
+  function cssMatrix(H, tx, ty) {
+    var m = [H[0], H[3], 0, H[6], H[1], H[4], 0, H[7], 0, 0, 1, 0,
+      H[0] * tx + H[1] * ty + H[2], H[3] * tx + H[4] * ty + H[5], 0, H[6] * tx + H[7] * ty + 1];
+    return 'matrix3d(' + m.join(', ') + ')';
   }
 
   function begin() {
@@ -793,6 +831,8 @@
 
   // Log out: Logout is pressed on the screen that is up, then the device goes
   // back to its login screen, with the farewell message in the welcome panel.
+  // Where the screen sits in the frame ('screen' in media.js) the login
+  // screen is HTML like the others; otherwise it is the render's own frame.
   function logout(i, viaSlide) {
     var step = state.sequence.steps[i];
     var btn = shown('[data-logout]')[0];
@@ -802,12 +842,17 @@
           hideCursor();
           var screen = state.loginScreen;
           var message = String((step.text || {}).message || '');
-          if (screen) {
-            plate.src = message ? screen.clean : screen.frame;
-            welcome.textContent = message;
+          if (screen && screen.screen) {
+            screenEl.innerHTML = window.TIScreens.login(message);
+            screenEl.hidden = false;
+          } else {
+            if (screen) {
+              plate.src = message ? screen.clean : screen.frame;
+              welcome.textContent = message;
+            }
+            fieldText.textContent = '';
+            screenEl.hidden = true;
           }
-          fieldText.textContent = '';
-          screenEl.hidden = true;
           if (viaSlide) {
             goTo('slide-scene');
             later(FADE_MS, function () { hold(i); });

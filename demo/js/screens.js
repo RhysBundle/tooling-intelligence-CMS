@@ -337,6 +337,22 @@ window.TIScreens = (function () {
     return instruction('Scale Location', ctx.product, line, icon, true);
   }
 
+  // The login screen the device goes back to on log out, with the log out
+  // message in the welcome panel, as 08_Search_1. The background is the
+  // device's own a7login.bmp (the concrete and the panel, no text); the
+  // title bar is empty, as in the renders, and the logo is the title bars'.
+  api.login = function (message) {
+    return '<div class="scr scr-login">' +
+      '<img class="scr-login-bg" src="' + api.base + 'assets/img/login-bg.jpg" alt="">' +
+      '<div class="scr-login-msg">' + esc(message) + '</div>' +
+      '<div class="scr-login-label">User ID</div>' +
+      '<div class="scr-field scr-login-field"></div>' +
+      '<div class="scr-btn scr-login-enter">Enter</div>' +
+      '<div class="scr-login-logo">' + logo() + '</div>' +
+      '<div class="scr-login-menu"><span>Admin</span><span>Service</span><span>Help</span></div>' +
+    '</div>';
+  };
+
   // Any event type without its own screen yet. Says so, rather than guessing.
   function placeholder(step) {
     var type = Ev.get(step.type);

@@ -114,6 +114,10 @@
       instruction: {
         label: 'Instruction, as the scanner screen (05_CheckOut_8; title differs)', art: '05_SmartDrawer_Checkout/05_CheckOut_8.png',
         step: { type: 'handheld_scanner_cradle', params: { direction: 'from_cradle' }, text: { message: 'Please, go to location A-A001-001, open door and get item with serial number 103.' } }, product: M10
+      },
+      login: {
+        label: 'Login, on log out (08_Search_1; its logo is SupplyPro\'s)', art: '08_SmartDrawer_Search/08_Search_1.png',
+        login: 'Welcome to SmartDrawer\nat Tooling intelligence.\nPlease login.'
       }
     };
 
@@ -142,6 +146,8 @@
       if (c.kbd) {
         el.layer.innerHTML = TIScreens.keyboard(c.kbd.kind, c.kbd.label);
         el.layer.querySelector('.kbd-out').textContent = c.kbd.text;
+      } else if (c.login) {
+        el.layer.innerHTML = TIScreens.login(c.login);
       } else {
         el.layer.innerHTML = TIScreens.build(c.step, { steps: [c.step], index: 0, product: c.product });
       }
