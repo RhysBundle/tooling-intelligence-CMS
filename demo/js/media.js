@@ -29,37 +29,32 @@ window.TI_MEDIA = {
   // One clip per environment, chosen by the customer's config.location.
   // Each starts in the environment and ends on the two products.
   //
-  // slide:    the End frame with its left side extended (from the
-  //           SupplyDrawer artwork folder). The right 1920px are the exact
-  //           End.png, so it matches the video's last frame.
-  // ext:      how many px of extension sit to the left of the End frame.
-  // slide_by: how far right the image slides so that product is centred.
+  // slide:     the End frame extended on both sides (from the SupplyDrawer
+  //            artwork folder). The End frame in the middle is the exact
+  //            End.png, so it matches the video's last frame.
+  // ext:       how many px of extension sit to the left of the End frame,
+  // ext_right: and to the right.
+  // slide_by:  how far the image slides so that product is centred: right
+  //            for the SmartDrawer, left (negative) for the SupplyVend.
   // Built by tools/build-slides.py; rerun it if any render changes.
   environments: {
     f1_automotive:     { label: 'F1 garage', video: 'assets/video/env-f1-automotive.mp4', poster: 'assets/img/env-f1-automotive-start.jpg',
-                         slide: 'assets/img/env-f1-automotive-slide.jpg', ext: 947, slide_by: { smartdrawer: 285.6 } },
+                         slide: 'assets/img/env-f1-automotive-slide.jpg', ext: 947, ext_right: 320, slide_by: { smartdrawer: 285.6, supplysystem: -245.0 } },
     aircraft_hangar:   { label: 'Aircraft hangar', video: 'assets/video/env-aircraft-hangar.mp4', poster: 'assets/img/env-aircraft-hangar-start.jpg',
-                         slide: 'assets/img/env-aircraft-hangar-slide.jpg', ext: 725, slide_by: { smartdrawer: 303.4 } },
+                         slide: 'assets/img/env-aircraft-hangar-slide.jpg', ext: 725, ext_right: 320, slide_by: { smartdrawer: 303.4, supplysystem: -307.5 } },
     cnc_machine_shop:  { label: 'CNC machine shop', video: 'assets/video/env-cnc-machine-shop.mp4', poster: 'assets/img/env-cnc-machine-shop-start.jpg',
-                         slide: 'assets/img/env-cnc-machine-shop-slide.jpg', ext: 725, slide_by: { smartdrawer: 225.9 } },
+                         slide: 'assets/img/env-cnc-machine-shop-slide.jpg', ext: 725, ext_right: 320, slide_by: { smartdrawer: 225.9, supplysystem: -175.5 } },
     medical_cleanroom: { label: 'Medical cleanroom', video: 'assets/video/env-medical-cleanroom.mp4', poster: 'assets/img/env-medical-cleanroom-start.jpg',
-                         slide: 'assets/img/env-medical-cleanroom-slide.jpg', ext: 725, slide_by: { smartdrawer: 257.7 } },
+                         slide: 'assets/img/env-medical-cleanroom-slide.jpg', ext: 725, ext_right: 320, slide_by: { smartdrawer: 257.7, supplysystem: -235.5 } },
     rail_depot:        { label: 'Rail depot', video: 'assets/video/env-rail-depot.mp4', poster: 'assets/img/env-rail-depot-start.jpg',
-                         slide: 'assets/img/env-rail-depot-slide.jpg', ext: 725, slide_by: { smartdrawer: 304.0 } },
+                         slide: 'assets/img/env-rail-depot-slide.jpg', ext: 725, ext_right: 320, slide_by: { smartdrawer: 304.0, supplysystem: -209.0 } },
     amazon_warehouse:  { label: 'Warehouse', video: 'assets/video/env-warehouse.mp4', poster: 'assets/img/env-warehouse-start.jpg',
-                         slide: 'assets/img/env-warehouse-slide.jpg', ext: 725, slide_by: { smartdrawer: 236.1 } }
+                         slide: 'assets/img/env-warehouse-slide.jpg', ext: 725, ext_right: 320, slide_by: { smartdrawer: 236.1, supplysystem: -251.0 } }
   },
 
   // Stand-ins while a product's media doesn't exist yet, as
   // { product: 'other product' }. None at present.
   stand_in: {},
-
-  // Whose slide a product uses, where it has no slide_by of its own. The
-  // slide images only extend to the left, so they can only slide to the
-  // SmartDrawer: the SupplyVend stands right of centre and would need them
-  // extended to the right. Until then SupplySystem slides as SmartDrawer
-  // does (Rhys, 9 Oct), and its own zoom crossfades in from there.
-  slide_as: { supplysystem: 'smartdrawer' },
 
   // Zoom from the product onto its screen, chosen by config.solution. Only
   // used where there is no zoom_login clip for the login type.

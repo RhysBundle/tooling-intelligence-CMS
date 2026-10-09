@@ -247,14 +247,15 @@
   var toneGamma = document.querySelectorAll('#render-tone .tone-gamma');
 
   // Puts the slide image back where its End frame covers the screen exactly,
-  // matching the video's last frame. ext is the extension to the left.
-  function resetPan(ext) {
-    ext = ext || 0;
+  // matching the video's last frame. ext and ext_right are the extensions
+  // to the left and right.
+  function resetPan(env) {
+    var ext = env.ext || 0;
     panImg.classList.add('no-anim');
     panImg.style.transform = 'none';
     panImg.style.left = (-ext) + 'px';
     panImg.style.top = '0px';
-    panImg.style.width = (1920 + ext) + 'px';
+    panImg.style.width = (ext + 1920 + (env.ext_right || 0)) + 'px';
     panImg.style.height = '1080px';
     void panImg.offsetWidth; // apply before the transition comes back
     panImg.classList.remove('no-anim');
@@ -279,9 +280,8 @@
     slots.take = createSlot(takeMedia, (action.take || {})[config.solution], 'take');
     slots['return'] = createSlot(returnMedia, (action['return'] || {})[config.solution], 'return');
 
-    resetPan(env.ext);
-    var slides = env.slide_by || {};
-    state.slideBy = sol in slides ? slides[sol] : slides[(MEDIA.slide_as || {})[sol]];
+    resetPan(env);
+    state.slideBy = (env.slide_by || {})[sol];
     state.panReady = false;
     if (env.slide && typeof state.slideBy === 'number') {
       panImg.onload = function () { state.panReady = true; };
@@ -463,9 +463,8 @@
   // The environment has ended on the two products.
   // 1. Switch to the slide image, whose End frame matches the video's last frame.
   // 2. Hold, then slide it across until the chosen product is centred:
-  //    right for SmartDrawer, left for SupplyVend (once its image exists).
+  //    right for SmartDrawer, left for SupplyVend.
   // 3. Crossfade to the zoom clip, paused on its first frame, then play it.
-  //    The SmartDrawer zoom clip is a placeholder for now.
   function afterEnvironment() {
     if (!state.panReady) {
       // No slide image for this product yet: straight crossfade.
@@ -1053,7 +1052,7 @@
     ['env-media', 'zoom-media', 'login-media', 'take-media', 'return-media'].forEach(function (id) { document.getElementById(id).innerHTML = ''; });
     device.hidden = true;
     clearScreen();
-    resetPan();
+    resetPan({});
     goTo('slide-title');
   });
 

@@ -7,7 +7,7 @@ Replaces the Storyline file. Open `index.html` in Chrome or Edge, or serve the f
 1. Title screen, Start button
 2. User ID screen. Looks the ID up in the CMS when the demo is served over http(s), then in `data/configs.js`, ignoring case (see User IDs and the CMS).
 3. Environment clip for the customer's `location`, ending on the two products
-4. The hand-off to the product (see below). SupplySystem slides as SmartDrawer does for now, then its own zoom crossfades in.
+4. The hand-off to the product (see below): the End frame slides across to the SmartDrawer or the SupplyVend.
 5. The zoom and login clip for the customer's `solution` and `login_type`: one clip that zooms onto the screen and logs in (see Zoom and login clips).
 6. Only where there is no such clip: the zoom on its own, then the device login screen in HTML on the zoom's last frame
    - Typed logins: the user ID is typed on the on-screen keyboard and Enter is pressed
@@ -70,14 +70,16 @@ The files in `assets/` are web copies of the originals in `GDrive-example/Videos
 All on one slide (`#slide-scene`), as layers:
 
 1. The environment clip plays and ends on the two products.
-2. The slide image fades in over the last frame (200ms). Its right 1920px are the exact `*_End.png`, so nothing moves.
+2. The slide image fades in over the last frame (200ms). The 1920px in its middle are the exact `*_End.png`, so nothing moves.
 3. Hold 300ms.
-4. The image slides right over 1.5s until the SmartDrawer cabinet is centred. The left side comes from the extended images in `2305_Product Demo_Screen Artwork/SupplyDrawer`.
-5. Hold 200ms, then the zoom clip fades in over 500ms and plays. `11_Smartdraw_ZoomIn.mp4` is a placeholder; the real zoom should start from the framing in `Claude outputs/zoom-start-frames/`.
+4. The image slides over 1.5s until the product stands where it does in the first frame of its zoom clip: right to the SmartDrawer, left to the SupplyVend. The extensions come from the extended images in `2305_Product Demo_Screen Artwork/SupplyDrawer`: `Stretched_*` and `Streteched_*` on the left, `Stretched_Right_*` (made with Gemini) on the right.
+5. Hold 200ms, then the zoom clip fades in over 500ms and plays.
 
-`tools/build-slides.py` builds `assets/img/env-*-slide.jpg` and works out `ext` and `slide_by` for `js/media.js`. The extended images are not pixel copies of the End frames (each is rescaled by 0.1 to 0.6 percent and shifted by part of a pixel, and the F1 one is about 7 levels darker), so the tool registers each one to its End frame, resamples and colour-matches the extension, and feathers it into the exact End.png over 96px. Rerun it if any render changes.
+`tools/build-slides.py` builds `assets/img/env-*-slide.jpg` and works out `ext`, `ext_right` and `slide_by` for `js/media.js`. The extended images are not pixel copies of the End frames. The left ones are rescaled by 0.1 to 0.6 percent and shifted by part of a pixel, and the F1 one is about 7 levels darker. The right ones are rescaled by up to 11 percent and redrawn in places. So the tool registers each one to its End frame (the right ones on the strip next to the join, where they have to line up), resamples and colour-matches the extension, and blends the exact End.png into it: over 96px on the left, and 32px on the right, where a wider blend shows redrawn things twice. Every image has 320px on the right; the SupplyVend needs 176 to 308px. Rerun the tool if any render changes.
 
-SupplySystem: the same, sliding left to the SupplyVend, once there are slide images with the right side extended (the SupplyVend stands about 200px right of centre, and the slide images only extend to the left). Until then a SupplySystem config (such as `Ferarri`) slides as SmartDrawer does, to the SmartDrawer (`slide_as` in `js/media.js`, Rhys, 9 Oct), and its own zoom and login clip, which starts on the SupplyVend, crossfades in from there. `stand_in` in `js/media.js` can still point one product at all of another's media; it is empty now.
+The SmartDrawer is found in each End frame from its eight red drawer labels. The SupplyVend's centre, halfway between the cabinet's outer edges, is measured by hand and kept in the tool (`SUPPLYVEND_X`), because the hangar's dark curtains and the warehouse's skirting sit right against it; measure again if an environment render changes. In the first frame of its login clips the SupplyVend stands at x 953, and larger than in the environments, so the zoom's crossfade grows it.
+
+`stand_in` in `js/media.js` can point one product at all of another's media; it is empty now.
 
 The slide runs even when the computer has reduced motion turned on (Windows: animation effects off), because it is the content, not decoration.
 

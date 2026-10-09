@@ -1,39 +1,64 @@
 {
   "feather": 96,
+  "feather_right": 32,
   "f1_automotive": {
     "ext": 947,
+    "ext_right": 320,
     "smartdrawer": {
       "slide": 285.6
+    },
+    "supplysystem": {
+      "slide": -245.0
     }
   },
   "aircraft_hangar": {
     "ext": 725,
+    "ext_right": 320,
     "smartdrawer": {
       "slide": 303.4
+    },
+    "supplysystem": {
+      "slide": -307.5
     }
   },
   "cnc_machine_shop": {
     "ext": 725,
+    "ext_right": 320,
     "smartdrawer": {
       "slide": 225.9
+    },
+    "supplysystem": {
+      "slide": -175.5
     }
   },
   "medical_cleanroom": {
     "ext": 725,
+    "ext_right": 320,
     "smartdrawer": {
       "slide": 257.7
+    },
+    "supplysystem": {
+      "slide": -235.5
     }
   },
   "rail_depot": {
     "ext": 725,
+    "ext_right": 320,
     "smartdrawer": {
       "slide": 304.0
+    },
+    "supplysystem": {
+      "slide": -209.0
     }
   },
   "amazon_warehouse": {
     "ext": 725,
+    "ext_right": 320,
     "smartdrawer": {
       "slide": 236.1
+    },
+    "supplysystem": {
+      "slide": -251.0
     }
   }
 }
