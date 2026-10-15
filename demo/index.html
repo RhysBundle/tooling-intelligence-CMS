@@ -88,6 +88,24 @@
         </div>
       </section>
 
+      <!-- The instruction pop-up and the pause button, from the environment clip
+           to the end of the sequence, over every slide. setTip() and setPaused()
+           in demo.js; the lines are in js/instructions.js. -->
+      <div class="coach" id="coach" hidden>
+        <div class="coach-tip" id="coach-tip" role="status" hidden>
+          <svg class="coach-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="2" opacity=".55"/>
+            <circle cx="10" cy="10" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M10.5 10.5 21 14.2l-4.3 1.7 3.6 3.6-1.9 1.9-3.6-3.6-1.7 4.3z" fill="currentColor"/>
+          </svg>
+          <span class="coach-text" id="coach-text"></span>
+        </div>
+        <button class="coach-pause" id="coach-pause" type="button" aria-label="Pause" title="Pause">
+          <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.2" fill="currentColor"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2" fill="currentColor"/></svg>
+          <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.6v12.8a.8.8 0 0 0 1.2.7l10-6.4a.8.8 0 0 0 0-1.4l-10-6.4a.8.8 0 0 0-1.2.7z" fill="currentColor"/></svg>
+        </button>
+      </div>
+
     </main>
   </div>
 
@@ -105,6 +123,7 @@
   <script src="js/media.js"></script>
   <script src="data/configs.js"></script>
   <script src="data/sequences.js"></script>
+  <script src="data/custom-clips.js"></script>
   <script src="data/cms.js"></script>
   <!-- The CMS's own catalogue, event types, rules and customer colours, so each is defined once.
        build-scorm.py packs them into shared/ and rewrites these paths. -->
@@ -113,6 +132,7 @@
   <script src="../shared/sequence-validator.js"></script>
   <script src="../shared/theme.js"></script>
   <script src="js/screens.js"></script>
+  <script src="js/instructions.js"></script>
   <script src="js/demo.js"></script>
 </body>
 </html>

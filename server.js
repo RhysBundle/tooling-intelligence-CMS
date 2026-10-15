@@ -65,6 +65,11 @@ async function initDatabase() {
     THEME_FIELDS.forEach(name => {
         if (columns.indexOf(name) < 0) db.run(`ALTER TABLE user_configs ADD COLUMN ${name} TEXT`);
     });
+    // Whether the demo shows its instruction pop-ups, added Oct 2026. On
+    // unless turned off, so existing rows start with it on.
+    if (columns.indexOf('allow_instructions') < 0) {
+        db.run('ALTER TABLE user_configs ADD COLUMN allow_instructions INTEGER NOT NULL DEFAULT 1');
+    }
 
     // Sequences are stored alongside, keyed on the same user_id, so a customer
     // can have the original four-field config, a sequence, or both. The
@@ -89,6 +94,15 @@ async function initDatabase() {
 // ============================================
 
 const THEME_FIELDS = ['theme_colour', 'button_colour', 'logo'];
+
+// allow_instructions from a request body as 1 or 0: only an explicit off
+// (false, 0, '0', 'false') turns it off. Undefined when the body doesn't
+// name it, so an update from a client that doesn't know it leaves it alone.
+function instructionsFlag(body) {
+    if (!body || !('allow_instructions' in body)) return undefined;
+    const v = body.allow_instructions;
+    return (v === false || v === 0 || v === '0' || v === 'false') ? 0 : 1;
+}
 
 function rowsFrom(results) {
     if (results.length === 0) return [];
@@ -198,10 +212,14 @@ app.post('/api/config', (req, res) => {
             return res.status(409).json({ error: 'User ID already exists' });
         }
         
+        const instructions = instructionsFlag(req.body);
         db.run(`
-            INSERT INTO user_configs (user_id, solution, login_type, location, theme_colour, button_colour, logo)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [user_id, solution, login_type, location].concat(THEME_FIELDS.map(k => theme.values[k] || null)));
+            INSERT INTO user_configs (user_id, solution, login_type, location, theme_colour, button_colour, logo, allow_instructions)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [user_id, solution, login_type, location].concat(
+            THEME_FIELDS.map(k => theme.values[k] || null),
+            [instructions === undefined ? 1 : instructions]
+        ));
         
         saveDatabase();
         
@@ -218,8 +236,8 @@ app.post('/api/config', (req, res) => {
 app.put('/api/config/:userId', (req, res) => {
     const { solution, login_type, location } = req.body;
     const userId = req.params.userId;
-    // Only the colour and logo fields the body names are changed, so a client
-    // that knows nothing of them can't wipe them.
+    // Only the colour, logo and allow_instructions fields the body names are
+    // changed, so a client that knows nothing of them can't wipe them.
     const theme = TITheme.normalise(req.body);
     if (theme.errors.length) {
         return res.status(400).json({ error: theme.errors[0], errors: theme.errors });
@@ -237,11 +255,17 @@ app.put('/api/config/:userId', (req, res) => {
         }
         
         const named = THEME_FIELDS.filter(k => k in theme.values);
+        const values = named.map(k => theme.values[k]);
+        const instructions = instructionsFlag(req.body);
+        if (instructions !== undefined) {
+            named.push('allow_instructions');
+            values.push(instructions);
+        }
         db.run(`
             UPDATE user_configs 
             SET solution = ?, login_type = ?, location = ?, ${named.map(k => k + ' = ?, ').join('')}updated_at = datetime('now')
             WHERE user_id = ?
-        `, [solution, login_type, location].concat(named.map(k => theme.values[k]), [userId]));
+        `, [solution, login_type, location].concat(values, [userId]));
         
         saveDatabase();
         

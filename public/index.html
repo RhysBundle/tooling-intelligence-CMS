@@ -460,6 +460,24 @@
         }
 
         .brand-hint { margin: 4px 0 16px; }
+
+        .check-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 0;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        .check-row input {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
         .field-note { display: block; margin-top: 6px; line-height: 1.45; }
 
         .colour-row { display: flex; gap: 10px; }
@@ -649,6 +667,14 @@
                             <option value="amazon_warehouse">Amazon Warehouse</option>
                         </select>
                     </div>
+
+                    <div class="form-group">
+                        <label class="check-row" for="allow_instructions">
+                            <input type="checkbox" id="allow_instructions" checked>
+                            Allow instructions
+                        </label>
+                        <small class="field-note">Pop-ups at the bottom right of the demo that say what to do at each step. Untick to hide them for this user ID. The pause button shows either way.</small>
+                    </div>
                     
                     <fieldset class="brand">
                         <legend>Device screen branding <span>optional</span></legend>
@@ -805,7 +831,8 @@
                 location: document.getElementById('location').value,
                 theme_colour: document.getElementById('theme_colour').value.trim(),
                 button_colour: document.getElementById('button_colour').value.trim(),
-                logo: logoData
+                logo: logoData,
+                allow_instructions: document.getElementById('allow_instructions').checked
             };
             const themeErrors = TITheme.normalise(data).errors;
             if (themeErrors.length) {
@@ -887,6 +914,10 @@
                                 <small>Screens</small>
                                 <span class="brand-cell">${brandCell(config)}</span>
                             </div>
+                            <div class="config-detail">
+                                <small>Instructions</small>
+                                <span>${instructionsOn(config) ? 'On' : 'Off'}</span>
+                            </div>
                         </div>
                         <div class="config-actions">
                             <button class="btn btn-small btn-edit" onclick="editConfig('${config.user_id}')">Edit</button>
@@ -913,6 +944,7 @@
                 setColour('theme_colour', config.theme_colour);
                 setColour('button_colour', config.button_colour);
                 if (config.logo) setLogo(config.logo, 'Custom logo'); else clearLogo();
+                document.getElementById('allow_instructions').checked = instructionsOn(config);
                 document.getElementById('edit-mode').value = 'true';
                 
                 document.getElementById('form-title').innerHTML = `
@@ -1090,6 +1122,11 @@
 
         // The colours as swatches and the logo on the theme colour, for the list.
         // Only checked values go into the markup.
+        // On unless stored as off, so configs from before the setting show on.
+        function instructionsOn(config) {
+            return config.allow_instructions !== 0 && config.allow_instructions !== false;
+        }
+
         function brandCell(config) {
             const theme = TITheme.colour(config.theme_colour);
             const button = TITheme.colour(config.button_colour);

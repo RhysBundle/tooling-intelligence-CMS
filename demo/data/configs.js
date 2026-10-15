@@ -15,6 +15,8 @@
  *                    its path from the demo folder
  * The last three are set in the CMS (Device screen branding). Leave any of
  * them out for the device's own look. See shared/theme.js.
+ *   allow_instructions  0 or false hides the instruction pop-ups (CMS:
+ *                    Allow instructions). Leave it out for them on
  */
 window.TI_CONFIGS = [
   { user_id: 'test1',   solution: 'smartdrawer',  login_type: 'barcode',           location: 'rail_depot' },  // switched to SmartDrawer in the CMS, 2 Oct

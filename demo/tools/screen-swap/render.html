@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <title>Screen render</title>
+  <!--
+    Draws device screens at 1024x768 for tools/screen-swap: render.js calls
+    show() with the user's colours and logo and one screen, then screenshots
+    it. The screens are the demo's own (js/screens.js), untoned: swap.py
+    applies the renders' tone itself.
+  -->
+  <link rel="stylesheet" href="../../css/demo.css">
+  <link rel="stylesheet" href="../../css/screens.css">
+  <style>
+    html, body { margin: 0; background: #000; overflow: hidden; }
+    #s { position: absolute; left: 0; top: 0; width: 1024px; height: 768px; }
+  </style>
+</head>
+<body>
+  <div class="screen" id="s"></div>
+  <script src="../../../shared/catalogue.js"></script>
+  <script src="../../../shared/event-types.js"></script>
+  <script src="../../../shared/theme.js"></script>
+  <script src="../../js/screens.js"></script>
+  <script>
+  /* o: { theme, button, logo, kind, ... }
+   *   instruction: title, product (catalogue id), line ({loc} is the product's door)
+   *   loan:        period
+   *   step:        steps, index; that step's screen as it arrives, nothing picked
+   * Resolves once its images and fonts are in. */
+  window.show = function (o) {
+    TIScreens.base = '../../';
+    var s = document.getElementById('s');
+    var vars = TITheme.vars({ theme_colour: o.theme, button_colour: o.button });
+    TITheme.VARS.forEach(function (n) { if (vars[n]) s.style.setProperty(n, vars[n]); else s.style.removeProperty(n); });
+    TIScreens.logo = o.logo || 'assets/img/ti-logo.png';
+    TIScreens.logoMissing = null;
+    if (o.kind === 'instruction') {
+      var p = TICatalogue.search('').filter(function (x) { return x.id === o.product; })[0] || {};
+      s.innerHTML = TIScreens.instruction(o.title, p, o.line.replace('{loc}', p.loc || ''));
+    } else if (o.kind === 'loan') {
+      var d = { type: 'display_loan_period', params: {}, text: { period: o.period } };
+      s.innerHTML = TIScreens.build(d, { steps: [d], index: 0 });
+    } else {
+      s.innerHTML = TIScreens.build(o.steps[o.index], { steps: o.steps, index: o.index });
+    }
+    s.querySelectorAll('.scr').forEach(function (x) { x.style.setProperty('--scr-w', '1024px'); x.style.setProperty('--scr-s', '1'); });
+    TIScreens.settle(s);
+    s.querySelectorAll('.is-picked').forEach(function (n) { n.classList.remove('is-picked'); });
+    return Promise.all(Array.prototype.map.call(document.images, function (im) {
+      return im.complete ? 1 : new Promise(function (r) { im.onload = im.onerror = r; });
+    })).then(function () { return document.fonts.ready; }).then(function () { return true; });
+  };
+  </script>
+</body>
+</html>

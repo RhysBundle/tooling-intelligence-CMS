@@ -210,6 +210,43 @@ body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -we
 .btn-next:active { transform: translateX(-50%) translateY(1px) scale(var(--next-s, 1)); }
 .btn-next[hidden] { display: none; }
 
+/* ---------- Instruction pop-up and pause ----------
+   Bottom right of the stage. At 300px wide its left edge is at x 956, clear
+   of the device's screen on both products (SupplySystem's ends at x 935),
+   so a long line wraps upward without covering a button. In the demo's own
+   blue to teal, the same for every customer. Above every slide, so it
+   stays up over the take and return clips. */
+.coach {
+  position: absolute; right: 24px; bottom: 24px; z-index: 20;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+  pointer-events: none;
+}
+.coach[hidden], .coach-tip[hidden] { display: none; }
+.coach-tip {
+  display: flex; align-items: flex-start; gap: 10px;
+  max-width: 300px; padding: 13px 18px 13px 14px; border-radius: 14px;
+  background: linear-gradient(90deg, var(--submit-a), var(--submit-b));
+  box-shadow: 0 6px 16px rgba(0,0,0,.4);
+  font-size: 17px; line-height: 24px; font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+.coach-tip.is-new { animation: coach-in .3s ease-out; }
+@keyframes coach-in { from { opacity: 0; transform: translateY(10px); } }
+.coach-icon { flex: none; width: 24px; height: 24px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.2)); }
+.coach-pause {
+  display: grid; place-items: center; width: 52px; height: 52px; padding: 0;
+  border: 0; border-radius: 50%; color: #fff; cursor: pointer; pointer-events: auto;
+  background: linear-gradient(90deg, var(--submit-a), var(--submit-b));
+  box-shadow: 0 5px 12px rgba(0,0,0,.4);
+  transition: filter .15s ease;
+}
+.coach-pause:hover { filter: brightness(1.08); }
+.coach-pause:active { transform: translateY(1px); }
+.coach-pause:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.coach-pause svg { width: 24px; height: 24px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.2)); }
+.coach-pause .icon-play, .coach-pause.is-paused .icon-pause { display: none; }
+.coach-pause.is-paused .icon-play { display: block; }
+
 /* ---------- Stub: next ---------- */
 .slide-next { background: radial-gradient(ellipse 60% 70% at 70% 30%, #1d4f86, #0b1a2e 55%, #05080e); }
 .next-panel { position: absolute; left: 60px; top: 150px; width: 640px; }

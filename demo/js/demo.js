@@ -9,6 +9,9 @@
  *   > the user's sequence, one device screen per step, with the take or
  *     return clip each time an item is taken out or put back > stub
  *
+ * From the environment clip on, an instruction pop-up says what to do on
+ * each step, and a pause button below it stops everything.
+ *
  * Classic scripts only (no modules), so it runs from file:// and in an LMS.
  */
 (function () {
@@ -66,7 +69,7 @@
     }
   };
 
-  var state = { slide: 'slide-title', config: null, run: 0, busy: false, sequence: null, mode: 'auto', onNext: null };
+  var state = { slide: 'slide-title', config: null, run: 0, busy: false, sequence: null, mode: 'auto', onNext: null, paused: false };
   var slots = {};
 
   /* ---------- Stage scaling ---------- */
@@ -165,12 +168,15 @@
       done();
     }
 
-    whenKnown(slot, function () {
+    whenKnown(slot, function () { whenPlaying(start); });
+    function start() {
       if (run !== state.run) return;
       if (!slot.missing) {
         slot.video.currentTime = 0;
         slot.video.onended = finish;
-        slot.video.play().catch(finish);
+        // A pause just after this cuts the play() short, which is not the
+        // clip failing: play picks it up again
+        slot.video.play().catch(function () { if (!state.paused) finish(); });
         return;
       }
       var panel = document.createElement('div');
@@ -187,18 +193,22 @@
       panel.appendChild(btn);
       slot.el.appendChild(panel);
 
+      // Counted through later(), so pause holds the count too
       var left = PLACEHOLDER_SECONDS;
+      var gone = false;
       var count = panel.querySelector('.ph-count');
       function tick() { count.textContent = 'Continues in ' + left + 's'; }
-      tick();
-      var timer = setInterval(function () {
+      function second() {
+        if (gone) return;
         left -= 1;
-        if (left <= 0) { cleanup(); finish(); } else { tick(); }
-      }, 1000);
-      function cleanup() { clearInterval(timer); panel.remove(); }
+        if (left <= 0) { cleanup(); finish(); } else { tick(); later(1000, second); }
+      }
+      tick();
+      later(1000, second);
+      function cleanup() { gone = true; panel.remove(); }
       btn.addEventListener('click', function () { cleanup(); finish(); });
       btn.focus();
-    });
+    }
   }
 
   /* ---------- Slides ---------- */
@@ -223,9 +233,118 @@
   }
 
   // Runs fn after delay, unless the demo was restarted in the meantime.
+  // Every wait in the run goes through here, so pause can stop the clock: a
+  // paused wait keeps the time it had left and carries on from there.
+  var timers = [];
   function later(ms, fn) {
-    var run = state.run;
-    setTimeout(function () { if (run === state.run) fn(); }, ms);
+    var t = { run: state.run, fn: fn, left: ms, id: null, at: 0 };
+    timers.push(t);
+    if (!state.paused) arm(t);
+  }
+
+  function arm(t) {
+    t.at = Date.now();
+    t.id = setTimeout(function () {
+      var k = timers.indexOf(t);
+      if (k >= 0) timers.splice(k, 1);
+      if (t.run === state.run) t.fn();
+    }, t.left);
+  }
+
+  // Runs fn now, or when play is pressed if paused. For things that start
+  // on an event rather than a wait, such as a clip that finishes loading.
+  var waiting = [];
+  function whenPlaying(fn) { if (state.paused) waiting.push(fn); else fn(); }
+
+  /* ---------- Pause ----------
+   * The round button under the instruction pop-up, from the environment
+   * clip to the end of the sequence. Pause stops the clock (every later()
+   * wait), the videos that are playing and the CSS moves part way through
+   * (the slide to the product, the cursor, fades); play starts each again
+   * from where it was. Next, in step-through, plays first.
+   */
+  var pauseBtn = document.getElementById('coach-pause');
+
+  function setPaused(on) {
+    on = !!on;
+    if (on === state.paused) return;
+    state.paused = on;
+    pauseBtn.classList.toggle('is-paused', on);
+    pauseBtn.setAttribute('aria-label', on ? 'Play' : 'Pause');
+    pauseBtn.title = on ? 'Play' : 'Pause';
+    if (on) {
+      var now = Date.now();
+      timers.forEach(function (t) { clearTimeout(t.id); t.left = Math.max(0, t.left - (now - t.at)); });
+      state.held = {
+        videos: [].filter.call(stage.querySelectorAll('video'), function (v) { return !v.paused && !v.ended; }),
+        anims: document.getAnimations ? document.getAnimations().filter(function (a) { return a.playState === 'running'; }) : []
+      };
+      state.held.videos.forEach(function (v) { v.pause(); });
+      state.held.anims.forEach(function (a) { a.pause(); });
+      return;
+    }
+    var held = state.held || { videos: [], anims: [] };
+    state.held = null;
+    // Only what is still paused: a move that was replaced or a clip that
+    // was removed in the meantime stays as it is
+    held.anims.forEach(function (a) { if (a.playState === 'paused') a.play(); });
+    held.videos.forEach(function (v) { if (v.isConnected && v.paused && !v.ended) v.play().catch(function () {}); });
+    timers.slice().forEach(arm);
+    waiting.splice(0).forEach(function (fn) { fn(); });
+  }
+
+  // Start again: drops every wait and lets anything held run out.
+  function resetPause() {
+    timers.forEach(function (t) { clearTimeout(t.id); });
+    timers = [];
+    waiting = [];
+    if (state.paused) {
+      (state.held || { anims: [] }).anims.forEach(function (a) { if (a.playState === 'paused') a.play(); });
+      state.held = null;
+      state.paused = false;
+      pauseBtn.classList.remove('is-paused');
+      pauseBtn.setAttribute('aria-label', 'Pause');
+      pauseBtn.title = 'Pause';
+    }
+  }
+
+  pauseBtn.addEventListener('click', function () { setPaused(!state.paused); });
+
+  /* ---------- Instruction pop-up ----------
+   * One line for what the operator does now (js/instructions.js), above the
+   * pause button. It changes as each step starts and is hidden between them
+   * where there is nothing to do (the environment and the slide). A config
+   * with allow_instructions off shows none for the whole run.
+   */
+  var coach = document.getElementById('coach');
+  var tip = document.getElementById('coach-tip');
+  var tipText = document.getElementById('coach-text');
+
+  // allow_instructions from the CMS is on unless set off (0 or false), so
+  // configs made before the setting show them. ?instructions=off or on
+  // overrides it, for testing.
+  function instructionsOn(config) {
+    var q = PARAMS.get('instructions');
+    if (q === 'off' || q === 'on') return q === 'on';
+    var v = config.allow_instructions;
+    return !(v === 0 || v === false || v === '0' || v === 'false');
+  }
+
+  // '' hides it. A new line comes in with a short rise.
+  function setTip(line) {
+    line = state.instructionsOn ? String(line || '') : '';
+    if (!line) { tip.hidden = true; tipText.textContent = ''; return; }
+    if (!tip.hidden && tipText.textContent === line) return;
+    tipText.textContent = line;
+    tip.hidden = false;
+    tip.classList.remove('is-new');
+    void tip.offsetWidth;
+    tip.classList.add('is-new');
+  }
+
+  function showCoach(on) {
+    coach.hidden = !on;
+    setTip('');
   }
 
   /* ---------- The run ---------- */
@@ -240,6 +359,8 @@
   var zoomMedia = document.getElementById('zoom-media');
   var takeMedia = document.getElementById('take-media');
   var returnMedia = document.getElementById('return-media');
+  var actionSlide = document.getElementById('slide-action');
+  var customSlots = { take: {}, 'return': {} };
   var screenEl = document.getElementById('screen');
   var stepNext = document.getElementById('step-next');
   var cursor = document.getElementById('cursor');
@@ -275,12 +396,11 @@
     state.zoomLogin = !!zoomLogin;
     slots.zoom = createSlot(zoomMedia, zoomLogin || (MEDIA.zoom || {})[sol], 'zoom');
     // Loaded now so they are ready mid-sequence. Each product has its own,
-    // so these skip the stand-in. A user ID can have its own too
-    // (custom_action in media.js).
+    // so these skip the stand-in.
     var action = MEDIA.action || {};
-    var custom = (MEDIA.custom_action || {})[String(config.user_id).toLowerCase()] || {};
-    slots.take = createSlot(takeMedia, custom.take || (action.take || {})[config.solution], 'take');
-    slots['return'] = createSlot(returnMedia, custom['return'] || (action['return'] || {})[config.solution], 'return');
+    slots.take = createSlot(takeMedia, (action.take || {})[config.solution], 'take');
+    slots['return'] = createSlot(returnMedia, (action['return'] || {})[config.solution], 'return');
+    prepareCustomClips(config);
 
     resetPan(env);
     state.slideBy = (env.slide_by || {})[sol];
@@ -322,6 +442,7 @@
     // ?cursor=off the cursor, ?keyboard=off the on-screen keyboard, all for
     // testing.
     state.sequence = sequence || null;
+    state.instructionsOn = instructionsOn(config);
     state.cursorOn = PARAMS.get('cursor') !== 'off';
     state.keyboardOn = PARAMS.get('keyboard') !== 'off';
     var mode = PARAMS.get('mode');
@@ -458,6 +579,7 @@
   }
 
   function begin() {
+    showCoach(true);
     goTo('slide-scene');
     later(FADE_MS, function () { playClip(slots.env, afterEnvironment); });
   }
@@ -481,6 +603,8 @@
   }
 
   function showZoom() {
+    // A zoom and login clip logs in as it plays
+    if (state.zoomLogin) setTip(window.TIInstructions.login(state.config.login_type));
     zoomMedia.classList.add('is-shown');
     later(ZOOM_FADE_MS, function () { playClip(slots.zoom, afterZoom); });
   }
@@ -498,6 +622,7 @@
 
   function login() {
     var type = state.config.login_type;
+    setTip(window.TIInstructions.login(type));
     if (type === 'login_no_password' || type === 'login_with_password') {
       typeOnScreen(field, fieldText, field, String(state.config.user_id), 'text', 'User ID', function () {
         later(400, function () {
@@ -565,6 +690,7 @@
     if (i >= steps.length) { showNext('End of the sequence.'); return; }
     var step = steps[i];
     state.stepIndex = i;
+    setTip(window.TIInstructions.step(step, { steps: steps, index: i }));
 
     if (step.type === 'logout') { logout(i, viaSlide); return; }
     if (DOOR_STEPS[step.type]) { playAction(DOOR_STEPS[step.type], i); return; }
@@ -675,13 +801,56 @@
     return kind;
   }
 
+  // A user ID can have take and return clips of its own, one per product,
+  // made by tools/screen-swap with the user's screens in the render
+  // (data/custom-clips.js). They are only used while the config still has
+  // the product, colours and logo they were made with, so a change in the
+  // CMS falls back to the usual clip rather than showing the old colours.
+  function prepareCustomClips(config) {
+    customSlots = { take: {}, 'return': {} };
+    removeCustomClips();
+    var mine = (window.TI_CUSTOM_CLIPS || {})[String(config.user_id).toLowerCase()];
+    if (!mine || !madeFor(mine.made, config)) return;
+    ['take', 'return'].forEach(function (kind) {
+      Object.keys(mine[kind] || {}).forEach(function (product) {
+        var el = document.createElement('div');
+        el.className = 'media media-custom';
+        el.hidden = true;
+        actionSlide.appendChild(el);
+        customSlots[kind][product] = createSlot(el, mine[kind][product], kind);
+      });
+    });
+  }
+
+  function removeCustomClips() {
+    actionSlide.querySelectorAll('.media-custom').forEach(function (el) { el.remove(); });
+  }
+
+  function madeFor(made, config) {
+    made = made || {};
+    return made.solution === config.solution &&
+      made.theme_colour === String(config.theme_colour || '').toLowerCase() &&
+      made.button_colour === String(config.button_colour || '').toLowerCase() &&
+      made.logo === fnv(String(config.logo || ''));
+  }
+
+  // FNV-1a, the same as fnv() in tools/screen-swap/swap.py: a short stamp of
+  // the logo, which can be a whole data URI.
+  function fnv(s) {
+    var h = 0x811c9dc5;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return ('0000000' + h.toString(16)).slice(-8);
+  }
+
   // Plays the take or return clip, then step i + 1 comes back on the device.
   // The clips start and end at a different framing from the zoom, so they
-  // fade in and out on their own slide, as the login clip does.
+  // fade in and out on their own slide, as the login clip does. The user's
+  // own clip for the product, where there is one, plays in its place.
   function playAction(kind, i) {
-    var slot = slots[kind];
-    takeMedia.hidden = kind !== 'take';
-    returnMedia.hidden = kind !== 'return';
+    var product = window.TIEvents.selectedProductAt(state.sequence.steps, i);
+    var slot = (product && customSlots[kind][product.id]) || slots[kind];
+    actionSlide.querySelectorAll('.media').forEach(function (el) { el.hidden = el !== slot.el; });
+    setTip(window.TIInstructions.clip(kind));
     goTo('slide-action');
     later(FADE_MS, function () {
       // Once the device is out of sight: the screen is hidden so a log out
@@ -841,6 +1010,7 @@
       moveTo(btn, function () {
         press(btn, function () {
           hideCursor();
+          setTip(''); // logged out, so nothing left to do
           var screen = state.loginScreen;
           var message = String((step.text || {}).message || '');
           if (screen && screen.screen) {
@@ -872,6 +1042,7 @@
     stepNext.hidden = false;
     state.onNext = function () {
       if (run !== state.run || Date.now() - from < NEXT_GUARD_MS) return;
+      setPaused(false);
       state.onNext = null;
       stepNext.hidden = true;
       stepNext.blur();
@@ -1036,6 +1207,7 @@
       return '<dt>' + escapeHtml(r[0]) + '</dt><dd>' + escapeHtml(r[1]) + '</dd>';
     }).join('');
     document.getElementById('next-note').textContent = note;
+    showCoach(false);
     goTo('slide-next');
     // Reaching the end of what is built counts as complete for now.
     if (window.TIScorm) window.TIScorm.complete();
@@ -1048,10 +1220,13 @@
   });
   document.getElementById('btn-restart').addEventListener('click', function () {
     state.run += 1;
+    resetPause();
+    showCoach(false);
     state.busy = false;
     state.config = null;
     input.value = '';
     ['env-media', 'zoom-media', 'login-media', 'take-media', 'return-media'].forEach(function (id) { document.getElementById(id).innerHTML = ''; });
+    removeCustomClips();
     device.hidden = true;
     clearScreen();
     resetPan({});
@@ -1075,5 +1250,5 @@
   var pre = PARAMS.get('userid');
   if (pre) input.value = pre;
 
-  window.TIDemo = { state: state, slots: slots, goTo: goTo };
+  window.TIDemo = { state: state, slots: slots, goTo: goTo, setPaused: setPaused };
 })();

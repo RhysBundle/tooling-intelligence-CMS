@@ -313,6 +313,9 @@ window.TIScreens = (function () {
       null);
   }
 
+  // For tools/screen-swap, which draws the renders' own Take screens.
+  api.instruction = function (title, p, line) { return instruction(title, p, line); };
+
   // No phase 1 screen exists for the cradle, so it is an instruction screen.
   function scanner(step, ctx) {
     var t = step.text || {};

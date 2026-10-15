@@ -15,6 +15,8 @@ Replaces the Storyline file. Open `index.html` in Chrome or Edge, or serve the f
 7. The customer's sequence from `data/sequences.js`, one device screen per step, with the take or return clip each time an item is taken out or put back (see below). A user ID with no sequence skips this.
 8. Stub screen showing the loaded config, and whether its config and sequence came from the CMS or the demo's data files
 
+From 3 to 7, an instruction pop-up and a pause button sit at the bottom right (see Instructions and pause).
+
 URL options, for testing:
 
 - `?userid=TI` pre-fills the ID
@@ -22,6 +24,7 @@ URL options, for testing:
 - `?tone=off` turns the render tone off (see Device screens)
 - `?cursor=off` turns the cursor off (see The cursor)
 - `?keyboard=off` types straight into fields instead of on the on-screen keyboard
+- `?instructions=off` or `?instructions=on` overrides the config's `allow_instructions` (see Instructions and pause)
 - `?cms=http://localhost:3000/` looks user IDs up in that CMS instead of the one in `data/cms.js`; `?cms=off` uses the data files only
 
 ## Hosted on SAGA
@@ -62,7 +65,7 @@ Every file is listed in `js/media.js`. A missing file shows a labelled placehold
 | Barcode login | `video/login-barcode.mp4` | The same |
 | SmartDrawer take and return | `video/take-smartdrawer.mp4`, `video/return-smartdrawer.mp4`, each with `img/*-start.jpg` | Done |
 | SupplySystem take and return | `video/take-supplysystem.mp4`, `video/return-supplysystem.mp4`, each with `img/*-start.jpg` | Done |
-| BRANDED's own take (trial) | `video/take-smartdrawer-branded.mp4`, with `img/take-smartdrawer-branded-start.jpg` | Trial, 9 Oct (see Take and return clips) |
+| A user's own take and return clips | `custom/<user id>/take-<product>.mp4`, `return-<product>.mp4`, each with `-start.jpg`, listed in `data/custom-clips.js` | Made by `tools/screen-swap` (see Take and return clips) |
 
 The files in `assets/` are web copies of the originals in `GDrive-example/Videos`: H.264, CRF 22, audio removed (the zoom and action clips' audio tracks were silent), faststart. Stills converted from PNG to JPEG. The take and return clips come from `Videos/ActionVideos/Adjusted`: `*TakeOut.mp4` is take, `*CheckIn.mp4` is return, and `SupplyVend*` is SupplySystem.
 
@@ -201,7 +204,11 @@ When it plays (`actionClipAfter` in `js/demo.js`):
 
 The clip fades in on its own slide, as the login clip does, because it starts and ends at a different framing from the zoom. The next step's screen fades back in after it. The clip's length stands in for a door step's dwell, and step-through mode does not wait for Next during a clip.
 
-Trial (9 Oct): a user ID can have take and return clips of its own, `custom_action` in `js/media.js`, used in place of its product's. BRANDED has a take clip made from SmartDrawer's, with the device screen swapped in every frame for ours in BRANDED's colours and logo, showing its product (M10 plug gauge) and door (A-C012). The swap tracks the render's screen against the phase 1 artwork it shows (05_CheckOut_8, then 9 from frame 172), matches the render's tone, focus and motion blur frame by frame, keeps the glass's reflections and leaves the hand in front where it presses OK. It is made for that config and sequence, so change either and it no longer matches. Nothing makes these from the CMS yet; the scripts are in `Claude outputs/screen-swap-trial/scripts` in the project folder, not in the repo.
+A user ID can have take and return clips of its own, with its colours, logo and product on the device screen in every frame of the render. `tools/screen-swap/swap.py build <user id>` makes them from the config and sequence, one per product the sequence takes or returns, into `assets/custom/<user id>/`, and lists them in `data/custom-clips.js`. The demo plays a user's clip for the product in place of the usual one, but only while the config still has the device, colours and logo the clips were made with (`made` in that file), so a change in the CMS falls back to the usual clip rather than showing the old colours.
+
+What changes on the screen: SmartDrawer's take shows Take with the product and its door, then the loan period message box (the sequence's loan period, or the render's "7 days"). Its return shows the return instruction, titled Return (the device's own says Take), then Select Product with the list from the sequence's search. SupplySystem's are the same. The rest of the render, including the SUPPLYPRO labels on the drawer fronts, is as it was.
+
+How: each render shows the phase 1 artwork as its screen, a few in a row (`tools/screen-swap/clips.py` says which, from which frame). `swap.py track <clip>`, run once per render, finds the screen in every frame by fitting that artwork to it, or where too little of the screen shows, by the optical flow of what's around it, and measures how out of focus it is (`tools/screen-swap/tracks/`). `build` draws the user's screens in headless Edge from `js/screens.js` (`tools/screen-swap/render.html`), tones them like the render, gives them each frame's focus and motion blur, and swaps them in, keeping the glass's reflections and leaving the hand in front where it is over the screen. About 1.5 minutes per clip. `swap.py check <clip>` makes a contact sheet of a track. Rerun `track` if a render changes.
 
 Product details (name, part number, menu number, unit of issue, quantity, door code) come from `shared/catalogue.js`. A search that matches fewer than six products is padded with the rest of their categories, so the list never looks empty. Thumbnails are placeholder line drawings until TI send photos.
 
@@ -239,6 +246,33 @@ What stays as it is:
 - The zoom and login clip is the render's own, so it keeps the device's red and grey and SupplyPro's logo. The colours change when the first screen after login cuts in. The log out screen is HTML but sits on the device's own login background, so only its logo and Enter button take the customer's branding.
 - The knob icons, the red X on FIND, the T and R pips, the message box's lavender and the blue picked outline are the device's own signals, not its theme, so they don't change.
 
+## Instructions and pause
+
+From the environment clip to the end of the sequence, the bottom right of the stage holds an instruction pop-up and, under it, a round pause button. Both are in the demo's own blue to teal, the same for every customer. The pop-up is at most 300px wide, which keeps it clear of the device's screen on both products; a long line wraps upward.
+
+The pop-up says what the operator does now, in one line from `js/instructions.js`, worded from the step's type and settings, so nothing is filled in per customer. It changes as each step starts. There is none during the environment clip and the slide.
+
+| When | Line |
+| --- | --- |
+| zoom and login clip, or the HTML typed login | Scan your RFID badge to log in. / Scan your barcode to log in. / Enter your user ID to log in. (both typed logins, as there is no password screen) |
+| `product_search` | Enter text here to search for a product. Category browse: Press Product Category, then pick a category to browse. |
+| `select_product` | Pick (product name) from the results. |
+| `select_action` | Press Take to take the item out. / Press Return to put the item back. With control "hardware": Press the Take (Return) button on the device. |
+| `enter_quantity` | Enter how many you are taking (returning), then press Continue. |
+| `login_allocation_code`, `product_allocation_code` | Pick the allocation code for your job (this item), then press Next. With barcode entry: Scan the allocation code for your job (this item). |
+| `display_loan_period` | Check when the item must be returned, then press OK. |
+| `info_window` | Check the lot number (the quantity left), then press OK. Custom: Read the message, then press OK. |
+| `transaction_confirmation` | Your transaction is complete. Press OK to carry on. |
+| `handheld_scanner_cradle` | Lift the scanner from its cradle. / Put the scanner back in its cradle. |
+| `scale_transaction` | Take the items from the scale. It weighs what you take. / Put the items on the scale. It weighs what you return. |
+| take clip, `open_pocket_take` | Take the item from its location, then close the door. |
+| return clip, `check_in` | Put the item back in its location, then close the door. |
+| `logout` | Press Logout when you have finished. Hidden once Logout is pressed. After a take or return clip the device logs out with no press, so there is no line |
+
+The config's `allow_instructions` turns the pop-ups off for a user ID. It is set in the CMS (Configurations, Allow instructions, ticked by default). 0 or false hides them; anything else, or no field, shows them, so configs from before the setting have them on. The pause button shows either way. `?instructions=off` or `on` overrides it for testing.
+
+Pause stops everything where it is: every wait in the run (`later()` in demo.js), the clip that is playing, and the CSS moves part way through (the slide to the product, the cursor, fades). Press again to carry on from the same point. In step-through mode, Next carries on too. Start again clears it. So pause can hold them, every new wait has to go through `later()` and every clip through `playClip()`.
+
 ## Layout
 
 The stage is fixed at 1280x720 and scales to fit the window, like the Storyline player. Positions are in px on that stage. Keep it that way.
@@ -250,12 +284,14 @@ css/screens.css    the device screens
 js/scorm.js        SCORM 1.2 wrapper, does nothing outside an LMS
 js/media.js        every video and still
 js/screens.js      the device screens, one per event type
-js/demo.js         scaling, slide changes, user ID, the run, the sequence
+js/demo.js         scaling, slide changes, user ID, the run, the sequence, pause
+js/instructions.js the instruction pop-up's line for each step
 data/configs.js    customer configs, used when the CMS hasn't got the ID
 data/sequences.js  customer sequences, the same
 data/cms.js        which CMS to look user IDs up in
+data/custom-clips.js  users' own take and return clips, written by tools/screen-swap
 assets/            fonts (Open Sans, Arimo), logo, video, img
-tools/             build-slides.py, pan-fit.json, build-login-clips.py, screen-check.html; not packaged
+tools/             build-slides.py, pan-fit.json, build-login-clips.py, screen-check.html, screen-swap/; not packaged
 ../shared/         catalogue.js, event-types.js, sequence-validator.js, theme.js, from the CMS
 ```
 

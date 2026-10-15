@@ -120,6 +120,11 @@
         return window.TISeedConfigs || [];
     });
 
+    // allow_instructions is on unless explicitly off, as on the server.
+    function instructionsOff(v) {
+        return v === false || v === 0 || v === '0' || v === 'false';
+    }
+
     function now() {
         return new Date().toISOString().slice(0, 19).replace('T', ' ');
     }
@@ -189,6 +194,7 @@
                 theme_colour: c.theme_colour || null,
                 button_colour: c.button_colour || null,
                 logo: c.logo || null,
+                allow_instructions: instructionsOff(c.allow_instructions) ? 0 : 1,
                 created_at: now(),
                 updated_at: now()
             });
@@ -220,6 +226,7 @@
                     theme_colour: 'theme_colour' in body ? body.theme_colour || null : existing.theme_colour || null,
                     button_colour: 'button_colour' in body ? body.button_colour || null : existing.button_colour || null,
                     logo: 'logo' in body ? body.logo || null : existing.logo || null,
+                    allow_instructions: instructionsOff('allow_instructions' in body ? body.allow_instructions : existing.allow_instructions) ? 0 : 1,
                     created_at: existing.created_at || now(),
                     updated_at: now()
                 });
