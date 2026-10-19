@@ -213,7 +213,10 @@ body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -we
 /* ---------- Instruction pop-up and pause ----------
    Bottom right of the stage. At 300px wide its left edge is at x 956, clear
    of the device's screen on both products (SupplySystem's ends at x 935),
-   so a long line wraps upward without covering a button. In the demo's own
+   so a long line wraps upward without covering a button. A line can be up
+   to 300 characters from the sequence builder, so longer ones are set
+   smaller (setTip() in demo.js adds the class) to keep the box from
+   climbing too far: 300 characters is about 11 lines at 15px. In the demo's own
    blue to teal, the same for every customer. Above every slide, so it
    stays up over the take and return clips. */
 .coach {
@@ -230,6 +233,9 @@ body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -we
   font-size: 17px; line-height: 24px; font-weight: 600;
   text-shadow: 0 1px 2px rgba(0,0,0,.25);
 }
+.coach-tip.is-long { font-size: 16px; line-height: 22px; }      /* over 90 characters */
+.coach-tip.is-longer { font-size: 15px; line-height: 20px; }    /* over 180 */
+.coach-text { white-space: pre-line; overflow-wrap: anywhere; } /* a new line typed in the builder starts a new line */
 .coach-tip.is-new { animation: coach-in .3s ease-out; }
 @keyframes coach-in { from { opacity: 0; transform: translateY(10px); } }
 .coach-icon { flex: none; width: 24px; height: 24px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.2)); }

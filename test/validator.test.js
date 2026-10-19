@@ -527,6 +527,94 @@ test('text on a light colour goes dark', () => {
     assert.strictEqual(TITheme.vars({ button_colour: '#1f4e79' })['--btn-text'], '#fff');
 });
 
+// ---- instruction pop-ups ------------------------------------------
+
+const TIInstructions = require('../shared/instructions.js');
+
+test('every event type has a default pop-up line that fits the field', () => {
+    TIEvents.EVENT_TYPES.forEach(t => {
+        const line = TIInstructions.defaultFor([step(t.id)], 0);
+        assert.ok(line, `${t.id} has no default line`);
+    });
+    TIInstructions.DEFAULTS.forEach(d => {
+        assert.ok(TIEvents.get(d.step), `${d.id} names an unknown step ${d.step}`);
+        assert.ok(d.text.length <= 80, `${d.id} is ${d.text.length} characters; defaults stay short`);
+    });
+    const ids = TIInstructions.DEFAULTS.map(d => d.id);
+    assert.strictEqual(new Set(ids).size, ids.length, 'default ids repeat');
+});
+
+test("a step's own pop-up replaces the default, and blank keeps it", () => {
+    const steps = [step('login_method'), step('product_search', { mode: 'typed' }, { query: 'drill' })];
+    assert.strictEqual(TIInstructions.step(steps, 1), 'Enter text here to search for a product.');
+    steps[1].text.instruction = '  Search for {search}  ';
+    assert.strictEqual(TIInstructions.step(steps, 1), 'Search for drill');
+    steps[1].text.instruction = '   ';
+    assert.strictEqual(TIInstructions.step(steps, 1), 'Enter text here to search for a product.');
+});
+
+test('{product}, {search} and {quantity} fill from the sequence', () => {
+    const steps = [
+        step('login_method'),
+        step('product_search', { mode: 'typed' }, { query: 'm10' }),
+        step('select_product', { product: 'plug_gauge' }),
+        step('select_action', { action: 'take' }),
+        step('enter_quantity', {}, { quantity: '2', instruction: 'Take {quantity} of {product}, found by {search}' })
+    ];
+    assert.strictEqual(TIInstructions.step(steps, 2), 'Pick M10 x 3 Screw Plug Gauge from the results.');
+    assert.strictEqual(TIInstructions.step(steps, 4), 'Take 2 of M10 x 3 Screw Plug Gauge, found by m10');
+    // Nothing to fill from yet: a plain phrase stands in
+    assert.strictEqual(TIInstructions.fill('{product} {search} {quantity}', steps, 0), 'the product a product the quantity');
+    // A category browse fills {search} with the category's name
+    const browse = [step('login_method'), step('product_search', { mode: 'category_page', category: 'inspection' })];
+    assert.strictEqual(TIInstructions.fill('{search}', browse, 1), 'Inspection');
+});
+
+test('the quantity and clip lines follow take or return', () => {
+    const steps = [
+        step('login_method'),
+        step('product_search'),
+        step('select_product', { product: 'plug_gauge' }),
+        step('select_action', { action: 'return' }),
+        step('enter_quantity')
+    ];
+    assert.strictEqual(TIInstructions.step(steps, 3), 'Press Return to put the item back.');
+    assert.strictEqual(TIInstructions.step(steps, 4), 'Enter how many you are returning, then press Continue.');
+    assert.strictEqual(TIInstructions.clip('return', steps, 4), 'Put the item back in its location, then close the door.');
+    steps[3].text.clip_instruction = 'Put {product} back';
+    assert.strictEqual(TIInstructions.clip('return', steps, 4), 'Put M10 x 3 Screw Plug Gauge back');
+    assert.strictEqual(TIInstructions.clipDefault(steps, 3), 'Put the item back in its location, then close the door.');
+});
+
+test('a door step is the clip, so its own pop-up shows during it', () => {
+    const steps = [step('login_method'), step('product_search'), step('select_product'), step('open_pocket_take')];
+    assert.strictEqual(TIInstructions.clip('take', steps, 3), 'Take the item from its location, then close the door.');
+    steps[3].text.instruction = 'Lift the lid and take one';
+    assert.strictEqual(TIInstructions.clip('take', steps, 3), 'Lift the lid and take one');
+});
+
+test("the config's login type picks the login line; the log in step can reword it", () => {
+    const steps = [step('login_method', { method: 'rfid' }), step('logout')];
+    assert.strictEqual(TIInstructions.login('barcode', steps), 'Scan your barcode to log in.');
+    assert.strictEqual(TIInstructions.login('login_with_password', null), 'Enter your user ID to log in.');
+    steps[0].text.instruction = 'Tap your badge on the reader';
+    assert.strictEqual(TIInstructions.login('barcode', steps), 'Tap your badge on the reader');
+});
+
+test('a pop-up instruction can be 300 characters, over that is an error, and blank is fine', () => {
+    const ok = seq([step('login_method'), step('logout', {}, { instruction: '' })]);
+    assert.ok(validate(ok).valid, messages(validate(ok)));
+    const full = seq([step('login_method'), step('logout', {}, { instruction: 'x'.repeat(300) })]);
+    assert.ok(validate(full).valid, messages(validate(full)));
+    const long = seq([step('login_method'), step('logout', {}, { instruction: 'x'.repeat(301) })]);
+    assert.ok(!validate(long).valid);
+    assert.ok(/Pop-up instruction/.test(messages(validate(long))));
+    // Sequences saved before the field existed have no key at all
+    const old = seq([step('login_method'), step('logout')]);
+    delete old.steps[1].text.instruction;
+    assert.ok(validate(old).valid, messages(validate(old)));
+});
+
 // ---- summary ------------------------------------------------------
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

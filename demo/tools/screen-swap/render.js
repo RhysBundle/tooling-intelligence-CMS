@@ -1,6 +1,7 @@
 // Screenshots render.html's screens at 1024x768 in a headless browser, over
 // the DevTools protocol. node render.js <job.json> <browser path>
-// job: { theme, button, logo, screens: [{ out, kind, ... }] }; see render.html.
+// job: { theme, button, logo, scale, screens: [{ out, kind, ... }] }; see
+// render.html. scale (default 1) draws them at that many times the size.
 'use strict';
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -10,6 +11,7 @@ const { pathToFileURL } = require('url');
 
 const [, , jobPath, browser] = process.argv;
 const job = JSON.parse(fs.readFileSync(jobPath, 'utf8'));
+const scale = job.scale || 1;
 const PORT = 9400 + Math.floor(Math.random() * 400);
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'ti-swap-browser-'));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -45,7 +47,7 @@ function done(code) {
   const send = (method, params = {}) => new Promise(res => { const n = ++id; pending[n] = m => res(m.result || m); ws.send(JSON.stringify({ id: n, method, params })); });
   await send('Runtime.enable');
   await send('Page.enable');
-  await send('Emulation.setDeviceMetricsOverride', { width: 1024, height: 768, deviceScaleFactor: 1, mobile: false });
+  await send('Emulation.setDeviceMetricsOverride', { width: 1024, height: 768, deviceScaleFactor: scale, mobile: false });
   await send('Page.navigate', { url: pathToFileURL(path.join(__dirname, 'render.html')).href });
   for (let i = 0; i < 50; i++) {
     const r = await send('Runtime.evaluate', { expression: 'typeof window.show', returnByValue: true });

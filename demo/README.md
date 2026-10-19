@@ -8,7 +8,7 @@ Replaces the Storyline file. Open `index.html` in Chrome or Edge, or serve the f
 2. User ID screen. Looks the ID up in the CMS when the demo is served over http(s), then in `data/configs.js`, ignoring case (see User IDs and the CMS).
 3. Environment clip for the customer's `location`, ending on the two products
 4. The hand-off to the product (see below): the End frame slides across to the SmartDrawer or the SupplyVend.
-5. The zoom and login clip for the customer's `solution` and `login_type`: one clip that zooms onto the screen and logs in (see Zoom and login clips).
+5. The zoom and login clip for the customer's `solution` and `login_type`: one clip that zooms onto the screen and logs in (see Zoom and login clips). A user with their own intro made from Emil's new renders gets that instead, with no slide (see A user's own intro).
 6. Only where there is no such clip: the zoom on its own, then the device login screen in HTML on the zoom's last frame
    - Typed logins: the user ID is typed on the on-screen keyboard and Enter is pressed
    - Badge and barcode logins: the physical login clip plays
@@ -66,6 +66,7 @@ Every file is listed in `js/media.js`. A missing file shows a labelled placehold
 | SmartDrawer take and return | `video/take-smartdrawer.mp4`, `video/return-smartdrawer.mp4`, each with `img/*-start.jpg` | Done |
 | SupplySystem take and return | `video/take-supplysystem.mp4`, `video/return-supplysystem.mp4`, each with `img/*-start.jpg` | Done |
 | A user's own take and return clips | `custom/<user id>/take-<product>.mp4`, `return-<product>.mp4`, each with `-start.jpg`, listed in `data/custom-clips.js` | Made by `tools/screen-swap` (see Take and return clips) |
+| A user's own push in, login and zoom | `custom/<user id>/intro.mp4`, with `intro-start.jpg` and `intro-end.jpg`, listed in `data/custom-clips.js` | Trial, BRANDED only. Made by `tools/screen-swap/intro.py` from Emil's renders (see A user's own intro) |
 
 The files in `assets/` are web copies of the originals in `GDrive-example/Videos`: H.264, CRF 22, audio removed (the zoom and action clips' audio tracks were silent), faststart. Stills converted from PNG to JPEG. The take and return clips come from `Videos/ActionVideos/Adjusted`: `*TakeOut.mp4` is take, `*CheckIn.mp4` is return, and `SupplyVend*` is SupplySystem.
 
@@ -113,6 +114,17 @@ On log out the device goes back to its login screen, built in HTML like the othe
 The renders' login screen is readable as the camera arrives, before the login, so a SupplySystem demo shows "Welcome to SmartDrawer" for about a second, and the SmartDrawer barcode clip's last frame lists one product as "Device Type: SupplyVend" until the first screen covers it. Both are in the video.
 
 SmartDrawer's ROUGH renders (`zoom-login-smartdrawer-barcode.mp4`, `-rfid.mp4`, `-userid.mp4`, from `.../ActionVideos/SmartDrawer/*_ROUGH.mp4`) are still in `assets/video`, unused. They zoom right into the screen, so it fills the frame, but end back on the login screen after logging in.
+
+## A user's own intro
+
+A trial (19 Oct), on BRANDED only. Emil's new renders (`New-vids/renders/<product>/` next to the repo, not in git; its README.txt maps his file names) are a push in from the environment to the monitor, a login at that framing (RFID, barcode or typed), and a zoom that ends square on with the screen filling the frame's height. He left the device screen flat grey (120 in every channel) so each customer's own screens can go on it. `tools/screen-swap/intro.py` does that.
+
+- `intro.py track <product>`, once per product: finds the grey screen's edges in every frame and fits the render's camera to them (a 1926px focal length, measured from the screen's perspective, and a 4:3 screen). So where an edge is out of shot (the barcode login looks down at the scanner; the zoom ends with the screen's top and bottom at the frame's edges) the corners still follow the camera. Within 0.3px of the edges seen on the push in and the zoom, 1.6px in the barcode move's fastest frames, where the motion blur is about 15px. The RFID and typed logins are freeze frames, so they get one place. Writes `tools/screen-swap/tracks/intro-<product>.json`; `intro.py check <product>` draws a contact sheet of it.
+- `intro.py build <user id>`: draws the user's login screen and their sequence's first screen, as it arrives, in headless Edge at twice size; tones them as the renders tone a screen; and puts them in place of the grey with the render's motion blur. The login screen shows on the push in and the login, the first screen from the moment the user logs in (the scan, the badge tap) and through the zoom. The background goes in behind the transparent login clip from `<location>_bkgd`. Writes `assets/custom/<user id>/intro.mp4` (12.4s with a barcode login), its first and last frames, and `intro` under the user in `data/custom-clips.js`. About 2 minutes. Encoded as BT.709 and tagged so, or Edge shows the colours about 5 levels off and the HTML screen's arrival shows it.
+
+The demo plays a user's intro in the zoom and login clip's place. It fades straight in from the environment clip, with no slide, because the push in starts on the cabinet in a spot of its own. The sequence's screens then sit on its last frame, mapped onto `login_screen.smartdrawer_new_zoom` in `js/media.js`, to within half a pixel. That's only while the config still has the colours, logo, location and login type, and the sequence the same first step, that it was made with (`made`); otherwise the usual clip and slide play.
+
+Not done yet: SupplySystem (not tracked; its login-moment frames in `intro.py` are guesses), and the RFID and typed builds have not been run. Known gaps: the push in doesn't start where the environment clip ends (asked of Emil), the instruction pop-up covers the screen's right-hand buttons at this framing, and the login screen's title bar keeps the device's grey and red.
 
 ## Login screen
 
@@ -250,13 +262,17 @@ What stays as it is:
 
 From the environment clip to the end of the sequence, the bottom right of the stage holds an instruction pop-up and, under it, a round pause button. Both are in the demo's own blue to teal, the same for every customer. The pop-up is at most 300px wide, which keeps it clear of the device's screen on both products; a long line wraps upward.
 
-The pop-up says what the operator does now, in one line from `js/instructions.js`, worded from the step's type and settings, so nothing is filled in per customer. It changes as each step starts. There is none during the environment clip and the slide.
+The pop-up says what the operator does now, in one line from `../shared/instructions.js`. It changes as each step starts. There is none during the environment clip and the slide.
+
+Every step has a default line, worded from its type and settings (the table below). Any step can reword it for its user ID: the Pop-up instruction field under Instruction pop-up on each step in the sequence builder, stored as the step's `text.instruction`. Blank keeps the default, which the field shows. Choose take or return has a second field, `text.clip_instruction`, for the take or return clip that plays after it. The log in step's field rewords the login line, whose default follows the config's `login_type`. A door step (`open_pocket_take`, `check_in`) is the clip, so its own field covers it. Up to 300 characters, checked by the CMS's validator; a new line typed in the field is a line break in the pop-up. The pop-up keeps its 300px width and grows upward, and longer lines are set smaller (16px over 90 characters, 15px over 180), so 300 characters is about 10 lines.
+
+Default or custom, a line can use `{product}`, `{search}` and `{quantity}`, filled from the sequence at that step: the product selected, the latest search term (or the category browsed) and the latest quantity entered. With none yet they read "the product", "a product" and "the quantity". `Claude outputs/TI_Instruction_Text_and_Products.docx` lists every default, by step, for TI to reword.
 
 | When | Line |
 | --- | --- |
 | zoom and login clip, or the HTML typed login | Scan your RFID badge to log in. / Scan your barcode to log in. / Enter your user ID to log in. (both typed logins, as there is no password screen) |
 | `product_search` | Enter text here to search for a product. Category browse: Press Product Category, then pick a category to browse. |
-| `select_product` | Pick (product name) from the results. |
+| `select_product` | Pick {product} from the results. |
 | `select_action` | Press Take to take the item out. / Press Return to put the item back. With control "hardware": Press the Take (Return) button on the device. |
 | `enter_quantity` | Enter how many you are taking (returning), then press Continue. |
 | `login_allocation_code`, `product_allocation_code` | Pick the allocation code for your job (this item), then press Next. With barcode entry: Scan the allocation code for your job (this item). |
@@ -285,16 +301,15 @@ js/scorm.js        SCORM 1.2 wrapper, does nothing outside an LMS
 js/media.js        every video and still
 js/screens.js      the device screens, one per event type
 js/demo.js         scaling, slide changes, user ID, the run, the sequence, pause
-js/instructions.js the instruction pop-up's line for each step
 data/configs.js    customer configs, used when the CMS hasn't got the ID
 data/sequences.js  customer sequences, the same
 data/cms.js        which CMS to look user IDs up in
-data/custom-clips.js  users' own take and return clips, written by tools/screen-swap
+data/custom-clips.js  users' own take and return clips and intros, written by tools/screen-swap
 assets/            fonts (Open Sans, Arimo), logo, video, img
 tools/             build-slides.py, pan-fit.json, build-login-clips.py, screen-check.html, screen-swap/; not packaged
-../shared/         catalogue.js, event-types.js, sequence-validator.js, theme.js, from the CMS
+../shared/         catalogue.js, event-types.js, instructions.js (the pop-up lines), sequence-validator.js, theme.js, from the CMS
 ```
 
-`build-scorm.py` packs `../shared/` into `shared/` in the zip and rewrites the four script paths in the packed `index.html`, so the package stands alone.
+`build-scorm.py` packs `../shared/` into `shared/` in the zip and rewrites the five script paths in the packed `index.html`, so the package stands alone.
 
 `python build-scorm.py --html` makes the same zip without the SCORM manifest, with `index.html` at the root, for a plain web host such as SAGA. Both stop if a file is asked for in a different case from its name (Windows forgives that, a web host does not), and list the media slots that have no file yet.

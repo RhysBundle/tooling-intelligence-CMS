@@ -90,7 +90,7 @@
 
       <!-- The instruction pop-up and the pause button, from the environment clip
            to the end of the sequence, over every slide. setTip() and setPaused()
-           in demo.js; the lines are in js/instructions.js. -->
+           in demo.js; the lines are in ../shared/instructions.js. -->
       <div class="coach" id="coach" hidden>
         <div class="coach-tip" id="coach-tip" role="status" hidden>
           <svg class="coach-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -125,14 +125,14 @@
   <script src="data/sequences.js"></script>
   <script src="data/custom-clips.js"></script>
   <script src="data/cms.js"></script>
-  <!-- The CMS's own catalogue, event types, rules and customer colours, so each is defined once.
+  <!-- The CMS's own catalogue, event types, pop-up lines, rules and customer colours, so each is defined once.
        build-scorm.py packs them into shared/ and rewrites these paths. -->
   <script src="../shared/catalogue.js"></script>
   <script src="../shared/event-types.js"></script>
+  <script src="../shared/instructions.js"></script>
   <script src="../shared/sequence-validator.js"></script>
   <script src="../shared/theme.js"></script>
   <script src="js/screens.js"></script>
-  <script src="js/instructions.js"></script>
   <script src="js/demo.js"></script>
 </body>
 </html>

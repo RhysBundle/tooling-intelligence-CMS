@@ -716,12 +716,13 @@ def swap_frame(frame, hs, f, s, art, ours, ones):
 
 CUSTOM_JS = DEMO / 'data' / 'custom-clips.js'
 CUSTOM_HEAD = '''/*
- * Take and return clips made for one user ID by tools/screen-swap: the
- * render with the user's own screens in it. Keyed by user ID in lower case,
- * then take or return, then product. made records the device, colours and
- * logo they were made with; the demo only uses them while the config still
- * matches.
- * Written by the tool, so don't edit it by hand.
+ * Clips made for one user ID by tools/screen-swap: the renders with the
+ * user's own screens in them. Keyed by user ID in lower case. take and
+ * return (swap.py) are then keyed by product; intro (intro.py) is the push
+ * in, login and zoom. Each made records what the clips were made with; the
+ * demo only uses them while the config (and for the intro, the sequence's
+ * first screen) still matches.
+ * Written by the tools, so don't edit it by hand.
  */
 window.TI_CUSTOM_CLIPS = '''
 
@@ -747,8 +748,10 @@ def cmd_build(userid, cms):
     if not evs:
         print(f'{userid}: its sequence takes and returns nothing, so no clips')
     out_dir = DEMO / 'assets' / 'custom' / uid
-    shutil.rmtree(out_dir, ignore_errors=True)
-    out_dir.mkdir(parents=True)
+    # Only this tool's own clips: the intro (intro.py) lives here too
+    for old in list(out_dir.glob('take-*')) + list(out_dir.glob('return-*')):
+        old.unlink()
+    out_dir.mkdir(parents=True, exist_ok=True)
     entry = {'made': {'solution': config['solution'],
                       'theme_colour': (config.get('theme_colour') or '').lower(),
                       'button_colour': (config.get('button_colour') or '').lower(),
@@ -770,6 +773,8 @@ def cmd_build(userid, cms):
                 'video': rel + '.mp4', 'poster': rel + '-start.jpg'}
             print(f'{userid}: {rel}.mp4')
     data = read_custom()
+    if 'intro' in data.get(uid, {}):
+        entry['intro'] = data[uid]['intro']
     data[uid] = entry
     write_custom(data)
     print('wrote data/custom-clips.js')

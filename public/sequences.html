@@ -112,7 +112,7 @@
             font-size: 0.85rem;
         }
 
-        input[type="text"], input[type="number"], select {
+        input[type="text"], input[type="number"], select, textarea {
             width: 100%;
             padding: 11px 14px;
             background: var(--bg-input);
@@ -123,7 +123,16 @@
             font-family: inherit;
         }
 
-        input:focus, select:focus {
+        /* The pop-up fields grow with what is typed, up to the 300 character limit */
+        textarea {
+            display: block;
+            min-height: 46px;
+            line-height: 1.45;
+            resize: vertical;
+            field-sizing: content;
+        }
+
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-glow);
@@ -284,6 +293,19 @@
         .step.open .step-body { display: block; }
 
         .char-count { float: right; font-size: 0.72rem; color: var(--text-secondary); }
+
+        /* The demo's instruction pop-up fields, after the screen's own text */
+        .popup-head {
+            margin: 18px 0 10px;
+            padding-top: 14px;
+            border-top: 1px dashed var(--border);
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+        }
+        .popup-hint { display: block; margin: -4px 0 12px; font-size: 0.75rem; line-height: 1.45; color: var(--text-secondary); }
         .char-count.over { color: var(--danger); font-weight: 600; }
 
         .note {
@@ -442,6 +464,7 @@
 
     <script src="shared/catalogue.js"></script>
     <script src="shared/event-types.js"></script>
+    <script src="shared/instructions.js"></script>
     <script src="shared/sequence-validator.js"></script>
     <script>
     (function () {
@@ -545,16 +568,30 @@
                         '</select></div>';
                 });
 
+                var popupShown = false;
                 (type.text || []).forEach(function (f) {
                     var val = step.text[f.key] == null ? '' : String(step.text[f.key]);
                     var over = val.length > f.maxLength;
+                    // The pop-up fields show the step's default line, filled
+                    // from the sequence, in place of a fixed placeholder.
+                    if (f.popup && !popupShown) {
+                        popupShown = true;
+                        body += '<div class="popup-head">Instruction pop-up</div>' +
+                            '<small class="popup-hint">Leave blank to use the default shown in the box. ' +
+                            'Type {product}, {search} or {quantity} to fill in the product, search term or quantity from this sequence. ' +
+                            'Up to 300 characters; a new line in the box starts a new line in the pop-up.</small>';
+                    }
+                    var attrs = 'data-step="' + i + '" data-text="' + f.key + '" data-max="' + f.maxLength + '"';
                     body += '<div class="form-group">' +
                         '<label>' + escapeHtml(f.label) +
                         '<span class="char-count' + (over ? ' over' : '') + '" data-count-for="' + i + '-' + f.key + '">' +
                         val.length + '/' + f.maxLength + '</span></label>' +
-                        '<input type="text" data-step="' + i + '" data-text="' + f.key +
-                        '" data-max="' + f.maxLength + '" value="' + escapeHtml(val) +
-                        '" placeholder="' + escapeHtml(f.placeholder || '') + '"></div>';
+                        (f.popup
+                            ? '<textarea rows="2" ' + attrs + ' data-popup="1" placeholder="' +
+                                escapeHtml(popupDefault(f.key, i)) + '">' + escapeHtml(val) + '</textarea>'
+                            : '<input type="text" ' + attrs + ' value="' + escapeHtml(val) +
+                                '" placeholder="' + escapeHtml(f.placeholder || '') + '">') +
+                        '</div>';
                 });
 
                 body += '<div class="form-group">' +
@@ -580,6 +617,21 @@
             }).join('');
 
             wireSteps();
+        }
+
+        // The default pop-up line for step i's field, as the demo will show it
+        function popupDefault(key, i) {
+            return key === 'clip_instruction'
+                ? TIInstructions.clipDefault(steps, i)
+                : TIInstructions.defaultFor(steps, i);
+        }
+
+        // A search term or quantity typed on one step changes the defaults
+        // of the steps after it, so they are worked out again.
+        function refreshPopupDefaults() {
+            el.steps.querySelectorAll('[data-popup]').forEach(function (input) {
+                input.placeholder = popupDefault(input.dataset.text, Number(input.dataset.step));
+            });
         }
 
         function wireSteps() {
@@ -622,7 +674,7 @@
                 });
             });
 
-            el.steps.querySelectorAll('input[data-text]').forEach(function (input) {
+            el.steps.querySelectorAll('[data-text]').forEach(function (input) {
                 input.addEventListener('input', function () {
                     var i = Number(input.dataset.step);
                     steps[i].text[input.dataset.text] = input.value;
@@ -632,6 +684,7 @@
                         counter.textContent = input.value.length + '/' + max;
                         counter.classList.toggle('over', input.value.length > max);
                     }
+                    if (!input.dataset.popup) refreshPopupDefaults();
                     validate();
                 });
             });

@@ -87,7 +87,7 @@
             id: 'login_method',
             label: 'Log in',
             stage: '3d',
-            note: 'The 3D clip covers the approach and the login action, and ends on a still of the device screen. The Web Object loads on the next step. Copy on the login screen belongs to the clip, so there is nothing to edit here.',
+            note: 'The 3D clip covers the approach and the login action, and ends on a still of the device screen. The Web Object loads on the next step. Copy on the login screen belongs to the clip, so there is nothing to edit on screen. The pop-up instruction shows while the clip plays; its default follows the config\'s login type.',
             repeatable: false,
             requires: [],
             sets: ['logged_in'],
@@ -379,6 +379,22 @@
             ]
         }
     ];
+
+    // The demo's instruction pop-up (shared/instructions.js) can be
+    // reworded on any step. Blank keeps the step's default line, so these
+    // have no placeholder and start empty. select_action also words the
+    // take or return clip that plays after it. popup marks them for the
+    // sequence builder, which shows the default in the field. 300 characters
+    // at most: the demo's pop-up grows upward and sets long lines smaller.
+    var POPUP = {
+        key: 'instruction', label: 'Pop-up instruction', maxLength: 300, optional: true, popup: true
+    };
+    var CLIP_POPUP = {
+        key: 'clip_instruction', label: 'Pop-up during the take or return clip', maxLength: 300, optional: true, popup: true
+    };
+    EVENT_TYPES.forEach(function (t) {
+        t.text = (t.text || []).concat(t.id === 'select_action' ? [POPUP, CLIP_POPUP] : [POPUP]);
+    });
 
     // ----------------------------------------------------------------
     // Lookups and helpers

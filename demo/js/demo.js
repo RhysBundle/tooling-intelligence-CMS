@@ -311,8 +311,9 @@
   pauseBtn.addEventListener('click', function () { setPaused(!state.paused); });
 
   /* ---------- Instruction pop-up ----------
-   * One line for what the operator does now (js/instructions.js), above the
-   * pause button. It changes as each step starts and is hidden between them
+   * One line for what the operator does now (../shared/instructions.js:
+   * the step's Pop-up instruction from the sequence builder, or its
+   * default), above the pause button. It changes as each step starts and is hidden between them
    * where there is nothing to do (the environment and the slide). A config
    * with allow_instructions off shows none for the whole run.
    */
@@ -330,16 +331,26 @@
     return !(v === 0 || v === false || v === '0' || v === 'false');
   }
 
-  // '' hides it. A new line comes in with a short rise.
+  // '' hides it. A new line comes in with a short rise. Long lines (up to
+  // 300 characters from the builder) are set smaller; see .coach in demo.css.
+  var TIP_LONG = 90, TIP_LONGER = 180;
   function setTip(line) {
     line = state.instructionsOn ? String(line || '') : '';
     if (!line) { tip.hidden = true; tipText.textContent = ''; return; }
     if (!tip.hidden && tipText.textContent === line) return;
     tipText.textContent = line;
+    tip.classList.toggle('is-long', line.length > TIP_LONG && line.length <= TIP_LONGER);
+    tip.classList.toggle('is-longer', line.length > TIP_LONGER);
     tip.hidden = false;
     tip.classList.remove('is-new');
     void tip.offsetWidth;
     tip.classList.add('is-new');
+  }
+
+  // The config's login type picks the default line; the sequence's log in
+  // step can reword it.
+  function loginTip() {
+    return window.TIInstructions.login(state.config.login_type, state.sequence && state.sequence.steps);
   }
 
   function showCoach(on) {
@@ -391,8 +402,11 @@
     state.mediaSolution = sol;
     slots.env = createSlot(document.getElementById('env-media'), env, 'env');
     // A clip that zooms in and logs in, where one exists for this login
-    // type, plays in the zoom's place. See zoom_login in media.js.
-    var zoomLogin = ((MEDIA.zoom_login || {})[sol] || {})[config.login_type];
+    // type, plays in the zoom's place. See zoom_login in media.js. The
+    // user's own (the push in, login and zoom with their screens in) comes
+    // first, and starts on the cabinet itself, so it has no slide.
+    var intro = customIntro(config, sequence);
+    var zoomLogin = intro || ((MEDIA.zoom_login || {})[sol] || {})[config.login_type];
     state.zoomLogin = !!zoomLogin;
     slots.zoom = createSlot(zoomMedia, zoomLogin || (MEDIA.zoom || {})[sol], 'zoom');
     // Loaded now so they are ready mid-sequence. Each product has its own,
@@ -403,7 +417,7 @@
     prepareCustomClips(config);
 
     resetPan(env);
-    state.slideBy = (env.slide_by || {})[sol];
+    state.slideBy = intro ? null : (env.slide_by || {})[sol];
     state.panReady = false;
     if (env.slide && typeof state.slideBy === 'number') {
       panImg.onload = function () { state.panReady = true; };
@@ -604,7 +618,7 @@
 
   function showZoom() {
     // A zoom and login clip logs in as it plays
-    if (state.zoomLogin) setTip(window.TIInstructions.login(state.config.login_type));
+    if (state.zoomLogin) setTip(loginTip());
     zoomMedia.classList.add('is-shown');
     later(ZOOM_FADE_MS, function () { playClip(slots.zoom, afterZoom); });
   }
@@ -622,7 +636,7 @@
 
   function login() {
     var type = state.config.login_type;
-    setTip(window.TIInstructions.login(type));
+    setTip(loginTip());
     if (type === 'login_no_password' || type === 'login_with_password') {
       typeOnScreen(field, fieldText, field, String(state.config.user_id), 'text', 'User ID', function () {
         later(400, function () {
@@ -690,7 +704,7 @@
     if (i >= steps.length) { showNext('End of the sequence.'); return; }
     var step = steps[i];
     state.stepIndex = i;
-    setTip(window.TIInstructions.step(step, { steps: steps, index: i }));
+    setTip(window.TIInstructions.step(steps, i));
 
     if (step.type === 'logout') { logout(i, viaSlide); return; }
     if (DOOR_STEPS[step.type]) { playAction(DOOR_STEPS[step.type], i); return; }
@@ -834,6 +848,41 @@
       made.logo === fnv(String(config.logo || ''));
   }
 
+  // The user's own push in, login and zoom, made by tools/screen-swap/intro.py
+  // with their login screen and their sequence's first screen in it. Only
+  // while the config still has the colours, logo, location and login type,
+  // and the sequence the first screen, that it was made with.
+  function customIntro(config, sequence) {
+    var mine = (window.TI_CUSTOM_CLIPS || {})[String(config.user_id).toLowerCase()];
+    var intro = mine && mine.intro;
+    if (!intro || !madeFor(intro.made, config)) return null;
+    if (intro.made.location !== config.location || intro.made.login_type !== config.login_type) return null;
+    return intro.made.first === firstStamp(sequence) ? intro : null;
+  }
+
+  // A stamp of what the device shows straight after login: the first step
+  // after the log in step, without its pop-up lines. The same as
+  // first_screen() and first_stamp() in tools/screen-swap/intro.py.
+  function firstStamp(sequence) {
+    var steps = (sequence && sequence.steps) || [];
+    var step = steps[steps[0] && steps[0].type === 'login_method' ? 1 : 0];
+    if (!step || step.type === 'logout' || DOOR_STEPS[step.type]) return '';
+    var text = {};
+    Object.keys(step.text || {}).forEach(function (k) {
+      if (k !== 'instruction' && k !== 'clip_instruction') text[k] = step.text[k];
+    });
+    return fnv(stableJson({ type: step.type, params: step.params || {}, text: text }));
+  }
+
+  // JSON with its keys sorted, as Python's json.dumps(sort_keys=True)
+  function stableJson(v) {
+    if (Array.isArray(v)) return '[' + v.map(stableJson).join(',') + ']';
+    if (v && typeof v === 'object') {
+      return '{' + Object.keys(v).sort().map(function (k) { return JSON.stringify(k) + ':' + stableJson(v[k]); }).join(',') + '}';
+    }
+    return JSON.stringify(v === undefined ? null : v);
+  }
+
   // FNV-1a, the same as fnv() in tools/screen-swap/swap.py: a short stamp of
   // the logo, which can be a whole data URI.
   function fnv(s) {
@@ -850,7 +899,7 @@
     var product = window.TIEvents.selectedProductAt(state.sequence.steps, i);
     var slot = (product && customSlots[kind][product.id]) || slots[kind];
     actionSlide.querySelectorAll('.media').forEach(function (el) { el.hidden = el !== slot.el; });
-    setTip(window.TIInstructions.clip(kind));
+    setTip(window.TIInstructions.clip(kind, state.sequence.steps, i));
     goTo('slide-action');
     later(FADE_MS, function () {
       // Once the device is out of sight: the screen is hidden so a log out

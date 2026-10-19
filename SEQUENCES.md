@@ -11,7 +11,16 @@ working exactly as it does today whether a sequence exists or not.
 (Since Oct 2026 `user_configs` also has three optional columns for the HTML
 demo's device screens: `theme_colour`, `button_colour` and `logo`, checked by
 `shared/theme.js`. The server adds them to an existing database on start. The
-four original fields and their endpoints behave as before.)
+four original fields and their endpoints behave as before. A fourth column,
+`allow_instructions`, added the same way and on by default, turns the demo's
+instruction pop-ups off for a user ID.)
+
+Every step also has an optional Pop-up instruction (`text.instruction`, up to
+300 characters), and Choose take or return a second one for the clip after it
+(`text.clip_instruction`). They reword the HTML demo's instruction pop-up for
+that step; blank keeps the default line, which the builder shows in the field.
+The defaults and the `{product}`, `{search}` and `{quantity}` tokens are in
+`shared/instructions.js`.
 
 ## What is here
 
@@ -19,11 +28,12 @@ four original fields and their endpoints behave as before.)
 | --- | --- |
 | `shared/catalogue.js` | The product catalogue. 36 products across 6 categories, with part numbers, quantities, units of issue, device types, menu numbers and door codes. |
 | `shared/event-types.js` | The event catalogue. 15 event types, their parameters, their editable copy fields and character limits, and which assets already exist. |
+| `shared/instructions.js` | The demo's instruction pop-up: the default line for every step, a step's own wording in its place, and the tokens. |
 | `shared/sequence-validator.js` | The rules. Shared by the browser and the API so the two cannot disagree. |
 | `public/sequences.html` | The builder. Event library grouped by stage, ordered step list, drag or arrow reorder, duplicate, per-step parameters and copy, live validation, run time. |
 | `public/player.html` | The preview. Rebuilds the real device screens at 1024x768 and scales them, shows the two 3D bookends as clip frames, marks both handover seams, and shows the Storyline variables each step would push. |
 | `examples/steuart-example-sequences.json` | Three worked sequences built from TI's own examples. These are the acceptance cases. |
-| `test/validator.test.js` | 50 tests over the rules, the stages, run time, the event catalogue and the product catalogue. `npm test`. |
+| `test/validator.test.js` | 62 tests over the rules, the stages, run time, the event catalogue, the product catalogue, customer colours and the pop-up lines. `npm test`. |
 | `test/seed-examples.js` | Loads the worked examples into a running server. `npm run seed:examples`. |
 
 ## Running it
