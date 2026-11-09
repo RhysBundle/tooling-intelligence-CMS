@@ -847,10 +847,19 @@ def entry_for(config, made, prefix, bust=False):
             'login_screen': f'{made["solution"]}_new_zoom', 'made': made}
 
 
-def build(config, seq, out_dir, log=print):
+def frame_count(config):
+    """How many frames config's intro has, for the worker's progress."""
+    tr = load_track(config['solution'])
+    login = LOGINS[config['login_type']]
+    return (len(tr['pushin'][config['location']]['corners']) + len(tr['clips'][login]['corners']) - 1 +
+            len(tr['clips']['zoom']['corners']) - 1)
+
+
+def build(config, seq, out_dir, log=print, tick=None):
     """Makes config's intro in out_dir: intro.mp4 and its first and last
     frames. The video is written under another name and renamed when done,
-    so a half-made one is never served. Returns what it was made with."""
+    so a half-made one is never served. tick() is called after each frame,
+    for the worker's progress. Returns what it was made with."""
     product, location = config['solution'], config['location']
     login = LOGINS[config['login_type']]
     spec = PRODUCTS[product]
@@ -892,6 +901,8 @@ def build(config, seq, out_dir, log=print):
         last = img
         count += 1
         enc.stdin.write(img.tobytes())
+        if tick:
+            tick()
 
     # The push in, with the login screen
     c = np.float32(tr['pushin'][location]['corners'])

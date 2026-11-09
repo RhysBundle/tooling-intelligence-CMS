@@ -834,11 +834,21 @@
   // action.py's are keyed by product and the stamp of the step after the
   // clip, since they end on that step's screen, and are made per location;
   // swap.py's (phase 1 renders) by product alone.
+  // The CMS's (made by worker.py) come first, then the demo's own files.
   function prepareCustomClips(config) {
     customSlots = { take: {}, 'return': {} };
     removeCustomClips();
-    var mine = (window.TI_CUSTOM_CLIPS || {})[String(config.user_id).toLowerCase()];
-    if (!mine || !madeFor(mine.made, config)) return;
+    var baked = (window.TI_CUSTOM_CLIPS || {})[String(config.user_id).toLowerCase()];
+    var tries = [[state.cmsClips, 'Made by the CMS'], [baked, 'Demo data files']];
+    var mine = null;
+    state.source.clips = null;
+    for (var i = 0; i < tries.length && !mine; i++) {
+      if (tries[i][0] && madeFor(tries[i][0].made, config)) {
+        mine = tries[i][0];
+        state.source.clips = tries[i][1];
+      }
+    }
+    if (!mine) return;
     ['take', 'return'].forEach(function (kind) {
       Object.keys(mine[kind] || {}).forEach(function (product) {
         if (mine[kind][product].location && mine[kind][product].location !== config.location) return;
@@ -1206,9 +1216,10 @@
       if (!config) return null;
       return Promise.all([
         get('api/sequence/' + encodeURIComponent(config.user_id)),
-        cmsIntro(get, base, config.user_id)
+        cmsIntro(get, base, config.user_id),
+        cmsClips(get, base, config.user_id)
       ]).then(function (got) {
-        return { config: config, sequence: got[0], intro: got[1] };
+        return { config: config, sequence: got[0], intro: got[1], clips: got[2] };
       });
     }).then(function (found) {
       clearTimeout(timer);
@@ -1232,6 +1243,24 @@
       var at = new URL(folder, base).href;
       ['video', 'poster', 'end'].forEach(function (k) { if (intro[k]) intro[k] = new URL(intro[k], at).href; });
       return intro;
+    }).catch(function () { return null; });
+  }
+
+  // The user's own take and return videos, if the worker has made them:
+  // custom/<id>/clips.json beside the CMS, as data/custom-clips.js has them.
+  function cmsClips(get, base, userId) {
+    if (!SAFE_ID.test(String(userId))) return Promise.resolve(null);
+    var folder = 'custom/' + String(userId).toLowerCase() + '/';
+    return get(folder + 'clips.json').then(function (clips) {
+      if (!clips || !clips.made) return null;
+      var at = new URL(folder, base).href;
+      ['take', 'return'].forEach(function (kind) {
+        Object.keys(clips[kind] || {}).forEach(function (key) {
+          var c = clips[kind][key];
+          ['video', 'poster'].forEach(function (k) { if (c[k]) c[k] = new URL(c[k], at).href; });
+        });
+      });
+      return clips;
     }).catch(function () { return null; });
   }
 
@@ -1297,6 +1326,7 @@
     };
     state.config = config;
     state.cmsIntro = found.intro || null;
+    state.cmsClips = found.clips || null;
     prepare(config, sequence);
     begin();
   }
@@ -1310,7 +1340,8 @@
       ['Login method', LABELS.login_type[c.login_type] || c.login_type],
       ['Config from', state.source.config],
       ['Sequence from', state.source.sequence],
-      ['Intro', state.source.intro || 'Usual clip']
+      ['Intro', state.source.intro || 'Usual clip'],
+      ['Take and return', state.source.clips || 'Usual clips']
     ];
     document.getElementById('next-config').innerHTML = rows.map(function (r) {
       return '<dt>' + escapeHtml(r[0]) + '</dt><dd>' + escapeHtml(r[1]) + '</dd>';

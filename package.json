@@ -7,7 +7,8 @@
     "start": "node server.js",
     "dev": "node server.js",
     "test": "node test/validator.test.js",
-    "seed:examples": "node test/seed-examples.js"
+    "seed:examples": "node test/seed-examples.js",
+    "videos": "python demo/tools/screen-swap/worker.py --cms http://localhost:3000/ --out custom"
   },
   "dependencies": {
     "cors": "^2.8.6",

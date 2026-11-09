@@ -293,9 +293,9 @@ def difference(ref, own):
     return d * cv2.GaussianBlur(m, (0, 0), 4)[..., None]
 
 
-def build_clip(product, location, kind, screens, out_video, out_poster, log=print):
+def build_clip(product, location, kind, screens, out_video, out_poster, log=print, tick=None):
     """screens: our two screens (toned, RS times the UI's px): the door's,
-    then what follows once it's shut."""
+    then what follows once it's shut. tick() is called after each frame."""
     spec = PRODUCTS[product]
     c = np.float32(load_track(product)['clips'][kind]['corners'])
     n = len(c)
@@ -324,6 +324,8 @@ def build_clip(product, location, kind, screens, out_video, out_poster, log=prin
             first = out
         enc.stdin.write(out.tobytes())
         count += 1
+        if tick:
+            tick()
     enc.stdin.close()
     if enc.wait():
         raise RuntimeError('ffmpeg failed')
@@ -332,44 +334,99 @@ def build_clip(product, location, kind, screens, out_video, out_poster, log=prin
     log(f'{out_video.name}: {count} frames ({count / 30:.1f}s)')
 
 
+def wanted_clips(seq):
+    """The clips a sequence needs, one per kind, product and step after it:
+    [(kind, key, what)]."""
+    out = {}
+    for w in clips_in((seq or {}).get('steps') or []):
+        out.setdefault((w['kind'], f'{w["product"]}|{w["next"]}'), w)
+    return [(kind, key, w) for (kind, key), w in out.items()]
+
+
+def plan_for(config, seq):
+    """Everything a user's clips are made from. The worker makes them again
+    whenever it changes: the colours and logo, the location, any step of the
+    sequence (a clip's last screen can show an earlier step's search), the
+    track, or this tool's LOOK."""
+    steps = [{k: v for k, v in s.items() if k != 'text'} | {'text': {k: v for k, v in (s.get('text') or {}).items()
+                                                                     if k not in ('instruction', 'clip_instruction')}}
+             for s in (seq or {}).get('steps') or []]
+    track = hashlib.sha1((TRACKS / f'action-{config["solution"]}.json').read_bytes()).hexdigest()[:8]
+    return {'made': made_for(config), 'location': config['location'],
+            'steps': fnv(json.dumps(steps, sort_keys=True, ensure_ascii=False)),
+            'renders': f'{LOOK}-{track}'}
+
+
+def frame_count(config, seq):
+    """How many frames config's clips have, for the worker's progress."""
+    tr = load_track(config['solution'])
+    return sum(len(tr['clips'][kind]['corners']) for kind, _, _ in wanted_clips(seq))
+
+
+def build(config, seq, out_dir, prefix, bust=False, log=print, tick=None, step=None):
+    """Makes config's clips in out_dir and returns their entry for the demo
+    (files from prefix; bust adds the plan's stamp to each file's address so
+    a browser doesn't show an old copy). step(label) is called as each clip
+    starts, tick() after each frame."""
+    product, location = config['solution'], config['location']
+    steps = (seq or {}).get('steps') or []
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    plan = plan_for(config, seq)
+    v = '?v=' + fnv(json.dumps(plan, sort_keys=True)) if bust else ''
+    entry = {'made': plan['made'], 'plan': plan, 'take': {}, 'return': {}}
+    keep = set()
+    for kind, key, w in wanted_clips(seq):
+        name = f'{kind}-{w["product"]}-{w["next"] or "end"}'
+        p = TICATALOGUE.get(w['product'], w['product'])
+        if step:
+            step(f'{kind.capitalize()}: {p}')
+        specs = [door_screen(kind, w['product']), next_screen(steps, w['step'] + 1)]
+        with tempfile.TemporaryDirectory() as tmp:
+            screens, _ = render_screens(config, specs, Path(tmp))
+        build_clip(product, location, kind, screens, out_dir / f'{name}.mp4', out_dir / f'{name}-start.jpg',
+                   log=log, tick=tick)
+        keep |= {f'{name}.mp4', f'{name}-start.jpg'}
+        entry[kind][key] = {
+            'label': f'{product} {kind}, {config["user_id"]}, {p}, {location}',
+            'video': f'{prefix}{name}.mp4{v}', 'poster': f'{prefix}{name}-start.jpg{v}',
+            'location': location, 'framing': PRODUCTS[product]['framing'], 'renders': plan['renders']}
+    # Only this tool's and swap.py's own clips: the intro lives here too
+    for old in list(out_dir.glob('take-*')) + list(out_dir.glob('return-*')):
+        if old.name not in keep:
+            old.unlink()
+    return entry
+
+
+def catalogue_names():
+    """Product names by catalogue ID, for the worker's progress labels."""
+    js = (f'const m = require({json.dumps(str(DEMO.parent / "shared" / "catalogue.js"))});'
+          'const c = m.TICatalogue || m;'
+          'console.log(JSON.stringify(Object.fromEntries(c.search("").map(p => [p.id, p.name]))));')
+    try:
+        return json.loads(subprocess.run(['node', '-e', js], check=True, capture_output=True, text=True).stdout)
+    except Exception:
+        return {}
+
+
+TICATALOGUE = catalogue_names()
+
+
 def cmd_build(userid, cms):
+    """Makes the clips into the demo's own files, assets/custom/<user id>/
+    and their entries in data/custom-clips.js, so they go in the package and
+    work from file://."""
     config, seq = user_data(userid, cms)
     if not config:
         sys.exit(f'no config for {userid}')
     why = can_build(config)
     if why:
         sys.exit(f'{userid}: {why}')
-    product, location = config['solution'], config['location']
-    steps = (seq or {}).get('steps') or []
-    wanted = clips_in(steps)
-    if not wanted:
+    if not wanted_clips(seq):
         print(f'{userid}: its sequence takes and returns nothing, so no clips')
     uid = str(config['user_id']).lower()
-    out_dir = DEMO / 'assets' / 'custom' / uid
-    out_dir.mkdir(parents=True, exist_ok=True)
-    track = hashlib.sha1((TRACKS / f'action-{product}.json').read_bytes()).hexdigest()[:8]
-    entry = {'made': made_for(config), 'take': {}, 'return': {}}
-    keep = set()
-    for w in wanted:
-        key = f'{w["product"]}|{w["next"]}'
-        if key in entry[w['kind']]:
-            continue
-        name = f'{w["kind"]}-{w["product"]}-{w["next"] or "end"}'
-        specs = [door_screen(w['kind'], w['product']), next_screen(steps, w['step'] + 1)]
-        with tempfile.TemporaryDirectory() as tmp:
-            screens, _ = render_screens(config, specs, Path(tmp))
-        build_clip(product, location, w['kind'], screens, out_dir / f'{name}.mp4', out_dir / f'{name}-start.jpg')
-        keep |= {f'{name}.mp4', f'{name}-start.jpg'}
-        rel = f'assets/custom/{uid}/{name}'
-        entry[w['kind']][key] = {
-            'label': f'{product} {w["kind"]}, {config["user_id"]}, {w["product"]}, {location}',
-            'video': rel + '.mp4', 'poster': rel + '-start.jpg',
-            'location': location, 'framing': PRODUCTS[product]['framing'],
-            'renders': f'{LOOK}-{track}'}
-    # Only this tool's and swap.py's own clips: the intro lives here too
-    for old in list(out_dir.glob('take-*')) + list(out_dir.glob('return-*')):
-        if old.name not in keep:
-            old.unlink()
+    entry = build(config, seq, DEMO / 'assets' / 'custom' / uid, f'assets/custom/{uid}/')
+    entry.pop('plan')
     data = read_custom()
     mine = data.get(uid, {})
     if 'intro' in mine:

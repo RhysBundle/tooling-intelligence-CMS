@@ -591,6 +591,27 @@
             font-weight: 700;
         }
 
+        /* Branded videos: the panel in the form, and each user's state in the
+           list, with a bar while they're made (demo/tools/screen-swap/worker.py) */
+        .video-steps { margin: 0 0 12px 18px; padding: 0; color: var(--text-primary); font-size: 0.88rem; line-height: 1.5; }
+        .video-steps li { margin-bottom: 6px; }
+        .video-steps li span { color: var(--text-secondary); }
+        .video-state { display: flex; flex-direction: column; gap: 5px; min-width: 150px; }
+        .video-state .is-ready { color: var(--success); }
+        .video-state .is-failed { color: var(--danger); }
+        .video-steps a { color: var(--accent); }
+        .video-bar { display: block; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+        .video-bar[hidden] { display: none; }
+        .video-bar span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.9s linear; }
+        .video-panel-state { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-input); }
+        .video-panel-state[hidden] { display: none; }
+        .video-panel-state .video-state { min-width: 0; }
+        .worker-line { margin: -8px 0 16px; font-size: 0.82rem; color: var(--text-secondary); }
+        .worker-line b { font-weight: 600; }
+        .worker-line .is-on { color: var(--success); }
+        .worker-line .is-off { color: var(--danger); }
+        .worker-line code { font-size: 0.8rem; }
+
         /* The colours and logo in the list */
         .brand-cell { display: flex; align-items: center; gap: 6px; }
         .swatch { flex: none; width: 18px; height: 18px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); }
@@ -736,6 +757,18 @@
                         </div>
                     </fieldset>
 
+                    <fieldset class="brand">
+                        <legend>Branded videos <span>made for you</span></legend>
+                        <p class="brand-hint">The demo's videos are made for each user ID with its own device screens in them: the colours and logo above, and the products in its sequence.</p>
+                        <ol class="video-steps">
+                            <li>Save this configuration.</li>
+                            <li>Build its sequence in the <a href="sequences.html">Sequence Builder</a>. <span>Each Take and Return in it gets its own video of the drawer or locker being used.</span></li>
+                            <li>The videos are made for you once both are saved, one user ID at a time: the intro <span>(walking up to the device, logging in, zooming in to the screen)</span>, then each take and return. <span>About 3 minutes each; the list on the right shows how far they've got.</span></li>
+                        </ol>
+                        <p class="brand-hint">Change the colours, logo, location, log in type or sequence and they're made again. Until they're ready the demo plays the standard videos, so it always works.</p>
+                        <div class="video-panel-state" id="video-panel-state" hidden></div>
+                    </fieldset>
+
                     <button type="submit" class="btn btn-primary" id="submit-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -764,7 +797,8 @@
                     </svg>
                     Existing Configurations
                 </h2>
-                
+                <p class="worker-line" id="worker-line"></p>
+
                 <div class="config-list" id="config-list">
                     <div class="empty-state">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -919,8 +953,8 @@
                                 <span>${instructionsOn(config) ? 'On' : 'Off'}</span>
                             </div>
                             <div class="config-detail">
-                                <small>Intro clip</small>
-                                <span class="intro-cell" data-intro="${encodeURIComponent(String(config.user_id).toLowerCase())}">-</span>
+                                <small>Branded videos</small>
+                                <span class="video-state" data-videos="${encodeURIComponent(String(config.user_id).toLowerCase())}">-</span>
                             </div>
                         </div>
                         <div class="config-actions">
@@ -929,36 +963,108 @@
                         </div>
                     </div>
                 `).join('');
-                loadIntroStates();
+                loadVideoStates();
             } catch (error) {
                 console.error('Failed to load configs:', error);
             }
         }
 
-        // Each user's own intro clip (push in, login and zoom with their
-        // screens), as the worker on SAGA reports it in custom/<id>/status.json.
-        // It makes one a minute or two after a save that changes the colours,
-        // logo, location, login type or the sequence's first step; until then
-        // the demo plays the usual clip. Where no worker runs (a local copy,
-        // Render) there's no status, so the cell shows a dash.
-        const INTRO_STATES = { ready: 'Ready', making: 'Being made', failed: "Couldn't be made", none: 'Not available' };
-        let introTimer = null;
-        async function loadIntroStates() {
-            clearTimeout(introTimer);
-            let making = false;
-            await Promise.all([...document.querySelectorAll('.intro-cell')].map(async cell => {
-                try {
-                    const response = await fetch(`custom/${cell.dataset.intro}/status.json`, { cache: 'no-store' });
-                    const st = response.ok ? await response.json() : null;
-                    cell.textContent = (st && INTRO_STATES[st.state]) || '-';
-                    cell.title = !st ? '' : st.state === 'none' ? st.why || '' : st.state === 'failed' ? st.error || '' :
-                        st.state === 'making' ? 'Started ' + new Date(st.since).toLocaleTimeString() : 'Made ' + new Date(st.at).toLocaleString();
-                    if (st && st.state === 'making') making = true;
-                } catch (e) {
-                    cell.textContent = '-';
-                }
+        // Each user's branded videos (the intro, and a take or return video for
+        // each take and return in the sequence), as the video maker
+        // (demo/tools/screen-swap/worker.py) reports them in
+        // custom/<id>/status.json, and whether it's running at all: it writes
+        // custom/_worker.json each time it looks at the CMS and while it makes
+        // a video. While anything waits or is being made, this looks again
+        // every 2 seconds so the bar moves; otherwise every 15.
+        const WORKER_STALE_MS = 60000;
+        let videoTimer = null;
+        let workerOn = false;
+        let editingKey = null;
+
+        async function fetchJson(url) {
+            try {
+                const response = await fetch(url, { cache: 'no-store' });
+                return response.ok ? await response.json() : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function esc(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+        }
+
+        // place: how many are made before this one, after the one being made
+        function inLine(place) {
+            if (place <= 1) return 'next in line';
+            const tens = place % 100, ones = place % 10;
+            const suffix = tens > 10 && tens < 14 ? 'th' : ones === 1 ? 'st' : ones === 2 ? 'nd' : ones === 3 ? 'rd' : 'th';
+            return `${place}${suffix} in line`;
+        }
+
+        // The words and bar for one user's state. The bar element is kept and
+        // only its width changed, so it slides rather than jumps.
+        function showVideoState(el, st) {
+            if (!el.querySelector('.video-text')) {
+                el.innerHTML = '<span class="video-text"></span><span class="video-bar" hidden><span></span></span>';
+            }
+            const text = el.querySelector('.video-text');
+            const bar = el.querySelector('.video-bar');
+            let words = '-', cls = '', percent = null, title = '';
+            if (!st) {
+                words = workerOn ? 'Not made yet' : '-';
+            } else if (st.state === 'ready') {
+                words = typeof st.videos === 'number' ? `Ready, ${st.videos} video${st.videos === 1 ? '' : 's'}` : 'Ready';
+                cls = 'is-ready';
+                title = 'Made ' + new Date(st.at).toLocaleString();
+            } else if (st.state === 'making') {
+                percent = st.percent || 0;
+                words = `Making ${st.part ? st.part + ', ' : ''}${percent}%`;
+                title = 'Started ' + new Date(st.since).toLocaleTimeString();
+            } else if (st.state === 'waiting') {
+                percent = 0;
+                words = `Waiting, ${inLine(st.place)}`;
+            } else if (st.state === 'failed') {
+                words = "Couldn't be made";
+                cls = 'is-failed';
+                title = st.error || '';
+            } else if (st.state === 'none') {
+                words = 'Not available';
+                title = st.why || '';
+            }
+            text.textContent = words;
+            text.className = 'video-text ' + cls;
+            el.title = title;
+            bar.hidden = percent === null;
+            if (percent !== null) bar.firstChild.style.width = percent + '%';
+        }
+
+        function showWorker(info) {
+            const line = document.getElementById('worker-line');
+            workerOn = !!(info && info.at && Date.now() - new Date(info.at).getTime() < WORKER_STALE_MS);
+            line.innerHTML = workerOn
+                ? 'Video maker: <b class="is-on">running</b>' + (info.busy ? `, making videos for <b>${esc(info.busy)}</b>` : ', nothing waiting')
+                : 'Video maker: <b class="is-off">not running</b>, so no branded videos are being made. To run it on this computer: <code>npm run videos</code>';
+        }
+
+        async function loadVideoStates() {
+            clearTimeout(videoTimer);
+            showWorker(await fetchJson('custom/_worker.json'));
+            let busy = false;
+            const states = {};
+            await Promise.all([...document.querySelectorAll('.video-state[data-videos]')].map(async cell => {
+                const st = await fetchJson(`custom/${cell.dataset.videos}/status.json`);
+                states[cell.dataset.videos] = st;
+                showVideoState(cell, st);
+                if (st && (st.state === 'making' || st.state === 'waiting')) busy = true;
             }));
-            introTimer = setTimeout(loadIntroStates, making ? 10000 : 30000);
+            const panel = document.getElementById('video-panel-state');
+            panel.hidden = !editingKey;
+            if (editingKey) {
+                const st = editingKey in states ? states[editingKey] : await fetchJson(`custom/${editingKey}/status.json`);
+                showVideoState(panel, st);
+            }
+            videoTimer = setTimeout(loadVideoStates, busy ? 2000 : 15000);
         }
         
         // Edit configuration
@@ -991,7 +1097,10 @@
                     Update Configuration
                 `;
                 document.getElementById('cancel-btn').style.display = 'block';
-                
+                // This user's branded videos, in the panel under the branding
+                editingKey = encodeURIComponent(String(config.user_id).toLowerCase());
+                loadVideoStates();
+
                 // Scroll to form
                 document.getElementById('config-form').scrollIntoView({ behavior: 'smooth' });
             } catch (error) {
@@ -1007,6 +1116,8 @@
         // Reset form to create mode
         function resetForm() {
             document.getElementById('config-form').reset();
+            editingKey = null;
+            document.getElementById('video-panel-state').hidden = true;
             setColour('theme_colour', '');
             setColour('button_colour', '');
             clearLogo();
