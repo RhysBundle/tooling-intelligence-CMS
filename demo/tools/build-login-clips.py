@@ -39,8 +39,14 @@ few frames (from FADE_FROM) as the hand moves away:
   - 'clip' copies the end of another clip with the same framing and a clean
     frame there
 
+The renders are BT.709 but untagged (decoded as 709 they match the render
+PNGs; ffmpeg's default for untagged video, 601, is 3 to 9 levels off on
+saturated colours). So frames are read as 709, the patch goes in as 709,
+and the web copies are tagged 709: the stills then match the clip as the
+browser plays it, and the HTML screens sit on the same colours.
+
 Output, in assets/:
-  video/zoom-login-<name>.mp4      web copy, H.264 CRF 22, no audio
+  video/zoom-login-<name>.mp4      web copy, H.264 CRF 22, no audio, tagged BT.709
   img/zoom-login-<name>-start.jpg  its first frame
   img/zoom-login-<name>-end.jpg    its last frame, for the device layer
 
@@ -92,14 +98,18 @@ def run(args):
     subprocess.run(args, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
 
+AS_709 = 'scale=in_color_matrix=bt709:in_range=tv,format=rgb24'
+TAG_709 = ['-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv']
+
+
 def frame_of(video, index, out):
-    run(['ffmpeg', '-v', 'error', '-y', '-i', str(video), '-vf', f'select=eq(n\\,{index})',
+    run(['ffmpeg', '-v', 'error', '-y', '-i', str(video), '-vf', f'select=eq(n\\,{index}),{AS_709}',
          '-frames:v', '1', str(out)])
     return Image.open(out).convert('RGB')
 
 
 def last_frame(video, out):
-    run(['ffmpeg', '-v', 'error', '-y', '-sseof', '-0.1', '-i', str(video), '-update', '1', str(out)])
+    run(['ffmpeg', '-v', 'error', '-y', '-sseof', '-0.1', '-i', str(video), '-vf', AS_709, '-update', '1', str(out)])
     return Image.open(out).convert('RGB')
 
 
@@ -124,14 +134,18 @@ def patch_image(name, last, ends):
 
 def encode(src, end, video, patch=None, fade_from=None):
     args = ['ffmpeg', '-v', 'error', '-y', '-i', str(src)]
+    tag = 'setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv'
     if patch:
         patch.save(TMP / 'patch.png')
         st, d = fade_from / FPS, (end - fade_from) / FPS
         args += ['-framerate', str(FPS), '-loop', '1', '-i', str(TMP / 'patch.png'), '-filter_complex',
-                 f'[1:v]format=rgba,fade=t=in:st={st:.4f}:d={d:.4f}:alpha=1[p];[0:v][p]overlay=0:0:shortest=1[v]',
-                 '-map', '[v]']
+                 f'[1:v]format=rgba,fade=t=in:st={st:.4f}:d={d:.4f}:alpha=1,'
+                 f'scale=out_color_matrix=bt709:out_range=tv,format=yuva420p[p];'
+                 f'[0:v][p]overlay=0:0:shortest=1,{tag}[v]', '-map', '[v]']
+    else:
+        args += ['-vf', tag]
     args += ['-frames:v', str(end + 1), '-an', '-c:v', 'libx264', '-preset', 'slow', '-crf', '22',
-             '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(video)]
+             '-pix_fmt', 'yuv420p', *TAG_709, '-movflags', '+faststart', str(video)]
     run(args)
 
 

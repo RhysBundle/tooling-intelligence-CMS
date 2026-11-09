@@ -22,6 +22,11 @@ app.use(express.static('public'));
 // event-types.js and sequence-validator.js are required above AND served to
 // the browser, so the builder, the player and the API share one rule set.
 app.use('/shared', express.static(path.join(__dirname, 'shared')));
+// Each user's own intro clip, made by demo/tools/screen-swap/worker.py: the
+// demo asks for custom/<id>/intro.json alongside the config, and the
+// Configurations list shows custom/<id>/status.json. Not in git.
+const CUSTOM_DIR = process.env.TI_CUSTOM_DIR || path.join(__dirname, 'custom');
+app.use('/custom', express.static(CUSTOM_DIR, { maxAge: 0 }));
 
 let db;
 

@@ -5,10 +5,14 @@ Builds a SCORM 1.2 package of the demo, or a plain HTML export of it.
     python build-scorm.py out/name.zip      -> that path
     python build-scorm.py --html            -> ../dist/TI_Product_Demo_HTML.zip
     python build-scorm.py --html out.zip    -> that path
+    python build-scorm.py --html --userid BRANDED   -> the ID box starts filled in
 
 The HTML export is the same files with no manifest, index.html at the root,
 for a plain web host such as SAGA. js/scorm.js is still in it and does
 nothing there.
+
+--userid fills the ID box in the packed index.html, so a viewer only has to
+press Submit. Any ID still works, and ?userid= on the address still wins.
 
 Standard library only. Lists every file in the manifest, and leaves out
 this script, the README, tools/ and anything not needed at runtime.
@@ -17,6 +21,7 @@ The demo loads the CMS's own catalogue, event types, validator and colour
 rules from ../shared. The package puts them in shared/ next to index.html, and the
 index.html it packs has those paths rewritten to match.
 """
+import html
 import re
 import sys
 import zipfile
@@ -92,6 +97,11 @@ def main():
     args = sys.argv[1:]
     html_only = '--html' in args
     args = [a for a in args if a != '--html']
+    userid = None
+    if '--userid' in args:
+        k = args.index('--userid')
+        userid = args[k + 1]
+        del args[k:k + 2]
     default = 'TI_Product_Demo_HTML.zip' if html_only else 'TI_Product_Demo_SCORM12.zip'
     out = Path(args[0]) if args else ROOT.parent / 'dist' / default
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -112,14 +122,18 @@ def main():
             z.writestr('imsmanifest.xml', manifest(names), compress_type=zipfile.ZIP_DEFLATED)
         for name, src in pairs:
             if name == 'index.html':
-                html = src.read_text(encoding='utf-8').replace('src="../shared/', 'src="shared/')
-                z.writestr(name, html, compress_type=zipfile.ZIP_DEFLATED)
+                page = src.read_text(encoding='utf-8').replace('src="../shared/', 'src="shared/')
+                if userid:
+                    page, n = re.subn(r'<input class="userid-input" id="userid"', lambda m: m.group(0) + ' value="%s"' % html.escape(userid), page)
+                    if n != 1:
+                        sys.exit('could not find the ID box in index.html')
+                z.writestr(name, page, compress_type=zipfile.ZIP_DEFLATED)
                 continue
             # Video and images are already compressed; storing them is faster.
             kind = zipfile.ZIP_STORED if name.endswith(('.mp4', '.webm', '.jpg', '.png', '.woff2')) else zipfile.ZIP_DEFLATED
             z.write(src, name, compress_type=kind)
     size = out.stat().st_size / 1e6
-    print(f'{out}  {len(names) + (0 if html_only else 1)} files  {size:.1f} MB')
+    print(f'{out}  {len(names) + (0 if html_only else 1)} files  {size:.1f} MB' + (f'  ID box: {userid}' if userid else ''))
 
 
 if __name__ == '__main__':

@@ -2,6 +2,7 @@
 // the DevTools protocol. node render.js <job.json> <browser path>
 // job: { theme, button, logo, scale, screens: [{ out, kind, ... }] }; see
 // render.html. scale (default 1) draws them at that many times the size.
+// What each show() returned goes in <job.json>.results, in order.
 'use strict';
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -16,8 +17,13 @@ const PORT = 9400 + Math.floor(Math.random() * 400);
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'ti-swap-browser-'));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-const proc = spawn(browser, ['--headless=new', '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files',
-  '--remote-debugging-port=' + PORT, '--user-data-dir=' + profile, '--window-size=1024,768', 'about:blank'], { stdio: 'ignore' });
+const args = ['--headless=new', '--no-first-run', '--no-default-browser-check', '--allow-file-access-from-files',
+  '--remote-debugging-port=' + PORT, '--user-data-dir=' + profile, '--window-size=1024,768'];
+// In a container (worker.py on SAGA) Chromium runs as root, which its sandbox
+// refuses, and /dev/shm is small
+if (process.getuid && process.getuid() === 0) args.push('--no-sandbox');
+if (process.platform === 'linux') args.push('--disable-dev-shm-usage');
+const proc = spawn(browser, args.concat(['about:blank']), { stdio: 'ignore' });
 
 function done(code) {
   proc.kill();
@@ -54,15 +60,18 @@ function done(code) {
     if (r.result && r.result.value === 'function') break;
     await sleep(100);
   }
+  const results = [];
   for (const screen of job.screens) {
     const o = Object.assign({ theme: job.theme, button: job.button, logo: job.logo }, screen);
     const r = await send('Runtime.evaluate', { expression: 'show(' + JSON.stringify(o) + ')', awaitPromise: true, returnByValue: true });
-    if (!r.result || r.result.value !== true) throw new Error('could not draw ' + screen.out + ': ' + JSON.stringify(r) + errors.join('\n'));
+    if (!r.result || !r.result.value) throw new Error('could not draw ' + screen.out + ': ' + JSON.stringify(r) + errors.join('\n'));
+    results.push(r.result.value === true ? {} : r.result.value);
     await sleep(150);
     const shot = await send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: 1024, height: 768, scale: 1 } });
     fs.writeFileSync(screen.out, Buffer.from(shot.data, 'base64'));
   }
   if (errors.length) throw new Error(errors.join('\n'));
+  fs.writeFileSync(jobPath + '.results', JSON.stringify(results));
   ws.close();
   done(0);
 })().catch(e => { console.error(e.message || e); done(1); });

@@ -429,7 +429,8 @@
 
     // The login screen, and where the device's screen sits, for the framing
     // the zoom ends on. A zoom and login clip can name its own (see media.js).
-    var screen = (MEDIA.login_screen || {})[(zoomLogin && zoomLogin.login_screen) || sol];
+    state.framing = (zoomLogin && zoomLogin.login_screen) || sol;
+    var screen = (MEDIA.login_screen || {})[state.framing];
     state.loginScreen = screen;
     device.hidden = true;
     fieldText.textContent = '';
@@ -552,7 +553,17 @@
     stepNext.style.setProperty('--next-x', H ? (mid.x * STAGE_SCALE) + 'px' : '');
     stepNext.style.setProperty('--next-top', H ? (mid.y * STAGE_SCALE - 22 * k) + 'px' : '');
     stepNext.style.setProperty('--next-s', H ? k : '');
+    // The pop-up keeps clear of the screen. Where the screen reaches past its
+    // usual left edge (Emil's new zoom ends with it at x 1121 on the stage,
+    // over the Admin Menu and Logout buttons), it narrows to the strip beside
+    // the screen, for the whole run so it doesn't change shape partway.
+    var right = g ? Math.max.apply(null, g.corners.map(function (p) { return p[0]; })) * STAGE_SCALE : 0;
+    var room = 1280 - right - 2 * COACH_GAP;
+    var narrow = room < COACH_W;
+    coach.classList.toggle('is-narrow', narrow);
+    coach.style.setProperty('--coach-w', narrow ? room + 'px' : '');
   }
+  var COACH_W = 300, COACH_GAP = 12;
 
   // The perspective transform that takes the UI's corners, (0, 0) to
   // (1024, 768), to the given frame positions, top left first and clockwise.
@@ -815,11 +826,14 @@
     return kind;
   }
 
-  // A user ID can have take and return clips of its own, one per product,
-  // made by tools/screen-swap with the user's screens in the render
+  // A user ID can have take and return clips of its own, made by
+  // tools/screen-swap with the user's screens in the render
   // (data/custom-clips.js). They are only used while the config still has
   // the product, colours and logo they were made with, so a change in the
   // CMS falls back to the usual clip rather than showing the old colours.
+  // action.py's are keyed by product and the stamp of the step after the
+  // clip, since they end on that step's screen, and are made per location;
+  // swap.py's (phase 1 renders) by product alone.
   function prepareCustomClips(config) {
     customSlots = { take: {}, 'return': {} };
     removeCustomClips();
@@ -827,6 +841,7 @@
     if (!mine || !madeFor(mine.made, config)) return;
     ['take', 'return'].forEach(function (kind) {
       Object.keys(mine[kind] || {}).forEach(function (product) {
+        if (mine[kind][product].location && mine[kind][product].location !== config.location) return;
         var el = document.createElement('div');
         el.className = 'media media-custom';
         el.hidden = true;
@@ -849,15 +864,24 @@
   }
 
   // The user's own push in, login and zoom, made by tools/screen-swap/intro.py
-  // with their login screen and their sequence's first screen in it. Only
-  // while the config still has the colours, logo, location and login type,
-  // and the sequence the first screen, that it was made with.
+  // with their login screen and their sequence's first screen in it: the one
+  // the CMS has (made by worker.py on SAGA), else the one in the demo's own
+  // files (data/custom-clips.js). Only while the config still has the
+  // colours, logo, location and login type, and the sequence the first
+  // screen, that it was made with.
   function customIntro(config, sequence) {
     var mine = (window.TI_CUSTOM_CLIPS || {})[String(config.user_id).toLowerCase()];
-    var intro = mine && mine.intro;
-    if (!intro || !madeFor(intro.made, config)) return null;
-    if (intro.made.location !== config.location || intro.made.login_type !== config.login_type) return null;
-    return intro.made.first === firstStamp(sequence) ? intro : null;
+    var tries = [[state.cmsIntro, 'Made by the CMS'], [mine && mine.intro, 'Demo data files']];
+    for (var i = 0; i < tries.length; i++) {
+      var intro = tries[i][0];
+      if (intro && madeFor(intro.made, config) && intro.made.location === config.location &&
+          intro.made.login_type === config.login_type && intro.made.first === firstStamp(sequence)) {
+        state.source.intro = tries[i][1];
+        return intro;
+      }
+    }
+    state.source.intro = null;
+    return null;
   }
 
   // A stamp of what the device shows straight after login: the first step
@@ -867,6 +891,13 @@
     var steps = (sequence && sequence.steps) || [];
     var step = steps[steps[0] && steps[0].type === 'login_method' ? 1 : 0];
     if (!step || step.type === 'logout' || DOOR_STEPS[step.type]) return '';
+    return stepStamp(step);
+  }
+
+  // A stamp of one step, without its pop-up lines. The same as first_stamp()
+  // in tools/screen-swap/intro.py, which also says '' for no step.
+  function stepStamp(step) {
+    if (!step) return '';
     var text = {};
     Object.keys(step.text || {}).forEach(function (k) {
       if (k !== 'instruction' && k !== 'clip_instruction') text[k] = step.text[k];
@@ -892,14 +923,22 @@
   }
 
   // Plays the take or return clip, then step i + 1 comes back on the device.
-  // The clips start and end at a different framing from the zoom, so they
-  // fade in and out on their own slide, as the login clip does. The user's
-  // own clip for the product, where there is one, plays in its place.
+  // The usual clips start and end at a different framing from the zoom, so
+  // they fade in and out on their own slide, as the login clip does. The
+  // user's own clip for the product, where there is one, plays in its place.
+  // One made from Emil's renders (action.py) starts and ends on the framing
+  // the user's intro left the screen on, with the Take or Return screen in
+  // it, so it cuts in as the device's screen would change; its last frame is
+  // step i + 1's screen, so the fade back shows nothing moving.
   function playAction(kind, i) {
-    var product = window.TIEvents.selectedProductAt(state.sequence.steps, i);
-    var slot = (product && customSlots[kind][product.id]) || slots[kind];
+    var steps = state.sequence.steps;
+    var product = window.TIEvents.selectedProductAt(steps, i);
+    var mine = customSlots[kind];
+    var slot = (product && (mine[product.id + '|' + stepStamp(steps[i + 1])] || mine[product.id])) || slots[kind];
     actionSlide.querySelectorAll('.media').forEach(function (el) { el.hidden = el !== slot.el; });
-    setTip(window.TIInstructions.clip(kind, state.sequence.steps, i));
+    setTip(window.TIInstructions.clip(kind, steps, i));
+    var cut = !!slot.def.framing && slot.def.framing === state.framing;
+    actionSlide.classList.toggle('is-cut', cut);
     goTo('slide-action');
     later(FADE_MS, function () {
       // Once the device is out of sight: the screen is hidden so a log out
@@ -1165,8 +1204,11 @@
       });
     }).then(function (config) {
       if (!config) return null;
-      return get('api/sequence/' + encodeURIComponent(config.user_id)).then(function (sequence) {
-        return { config: config, sequence: sequence };
+      return Promise.all([
+        get('api/sequence/' + encodeURIComponent(config.user_id)),
+        cmsIntro(get, base, config.user_id)
+      ]).then(function (got) {
+        return { config: config, sequence: got[0], intro: got[1] };
       });
     }).then(function (found) {
       clearTimeout(timer);
@@ -1175,6 +1217,22 @@
       clearTimeout(timer);
       throw err;
     });
+  }
+
+  // The user's own intro, if the worker on SAGA has made one
+  // (tools/screen-swap/worker.py): custom/<id>/intro.json beside the CMS,
+  // with its files' addresses made whole. null if there's none, and a
+  // problem with it never counts against the CMS being up.
+  var SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;  // as worker.py; other IDs get none
+  function cmsIntro(get, base, userId) {
+    if (!SAFE_ID.test(String(userId))) return Promise.resolve(null);
+    var folder = 'custom/' + String(userId).toLowerCase() + '/';
+    return get(folder + 'intro.json').then(function (intro) {
+      if (!intro || !intro.video || !intro.made) return null;
+      var at = new URL(folder, base).href;
+      ['video', 'poster', 'end'].forEach(function (k) { if (intro[k]) intro[k] = new URL(intro[k], at).href; });
+      return intro;
+    }).catch(function () { return null; });
   }
 
   function findConfig(id) {
@@ -1238,6 +1296,7 @@
       sequence: found.sequence ? 'CMS' : sequence ? 'Demo data files' : 'None'
     };
     state.config = config;
+    state.cmsIntro = found.intro || null;
     prepare(config, sequence);
     begin();
   }
@@ -1250,7 +1309,8 @@
       ['Solution', LABELS.solution[c.solution] || c.solution],
       ['Login method', LABELS.login_type[c.login_type] || c.login_type],
       ['Config from', state.source.config],
-      ['Sequence from', state.source.sequence]
+      ['Sequence from', state.source.sequence],
+      ['Intro', state.source.intro || 'Usual clip']
     ];
     document.getElementById('next-config').innerHTML = rows.map(function (r) {
       return '<dt>' + escapeHtml(r[0]) + '</dt><dd>' + escapeHtml(r[1]) + '</dd>';

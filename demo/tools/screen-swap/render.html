@@ -28,8 +28,12 @@
    *   loan:        period
    *   step:        steps, index; that step's screen once done, as the device goes back to it
    *   arrive:      steps, index; that step's screen as it arrives, nothing typed or picked
-   *   login:       the login screen, as log out shows it
-   * Resolves once its images and fonts are in. */
+   *   login:       the login screen, as log out shows it, with message (if any)
+   *                in its welcome panel
+   *   keyboard:    the keyboard for a typed login: text in the field so far,
+   *                upper (capitals, with Caps Lock on), press [x, y] (UI px):
+   *                the key under that point shows pressed
+   * Resolves once its images and fonts are in, with the key pressed if any. */
   window.show = function (o) {
     TIScreens.base = '../../';
     var s = document.getElementById('s');
@@ -44,17 +48,44 @@
       var d = { type: 'display_loan_period', params: {}, text: { period: o.period } };
       s.innerHTML = TIScreens.build(d, { steps: [d], index: 0 });
     } else if (o.kind === 'login') {
-      s.innerHTML = TIScreens.login('');
+      s.innerHTML = TIScreens.login(o.message || '');
+    } else if (o.kind === 'keyboard') {
+      s.innerHTML = TIScreens.keyboard('text', 'User ID');
     } else {
       s.innerHTML = TIScreens.build(o.steps[o.index], { steps: o.steps, index: o.index });
     }
     s.querySelectorAll('.scr').forEach(function (x) { x.style.setProperty('--scr-w', '1024px'); x.style.setProperty('--scr-s', '1'); });
-    if (o.kind !== 'arrive' && o.kind !== 'login') TIScreens.settle(s);
+    if (o.kind !== 'arrive' && o.kind !== 'login' && o.kind !== 'keyboard') TIScreens.settle(s);
     s.querySelectorAll('.is-picked').forEach(function (n) { n.classList.remove('is-picked'); });
+    var pressed = o.kind === 'keyboard' ? keyboard(s.firstChild, o) : null;
     return Promise.all(Array.prototype.map.call(document.images, function (im) {
       return im.complete ? 1 : new Promise(function (r) { im.onload = im.onerror = r; });
-    })).then(function () { return document.fonts.ready; }).then(function () { return true; });
+    })).then(function () { return document.fonts.ready; }).then(function () { return pressed ? { key: pressed } : true; });
   };
+
+  // As demo.js types: the text so far with the caret, capitals with Caps Lock
+  // on, and the key the finger is on pressed. That is the key whose box holds
+  // the point, or the nearest within 30 px (the finger can land on a gap).
+  function keyboard(kb, o) {
+    var out = kb.querySelector('.kbd-out');
+    out.textContent = o.text || '';
+    out.classList.add('is-typing');
+    kb.classList.toggle('is-upper', !!o.upper);
+    var caps = kb.querySelector('[data-key="caps"]');
+    if (caps) caps.classList.toggle('is-on', !!o.upper);
+    if (!o.press) return null;
+    var best = null, bestD = 30;
+    kb.querySelectorAll('.kbd-key').forEach(function (k) {
+      var r = k.getBoundingClientRect();
+      var dx = Math.max(r.left - o.press[0], 0, o.press[0] - r.right);
+      var dy = Math.max(r.top - o.press[1], 0, o.press[1] - r.bottom);
+      var d = Math.hypot(dx, dy);
+      if (d < bestD || (d === 0 && bestD === 0)) { best = k; bestD = d; }
+    });
+    if (!best) return '(none)';
+    best.classList.add('is-pressed');
+    return best.getAttribute('data-key') || best.textContent;
+  }
   </script>
 </body>
 </html>

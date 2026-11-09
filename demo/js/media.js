@@ -146,13 +146,19 @@ window.TI_MEDIA = {
       tone: { saturation: 0.7, curve: [[0, 0], [36, 5], [64, 30], [180, 156], [220, 188], [240, 205], [255, 208]] },
       screen: { corners: [[549, 184], [1403, 184], [1403, 824.5], [549, 824.5]], bleed: [6, 11, 0, 8.5] }
     },
-    // Emil's new zoom (19 Oct) ends square on with the screen filling the
-    // frame's height. Only a user's own intro uses it so far (see
-    // TI_CUSTOM_CLIPS). Corners from tools/screen-swap/intro.py's track; the
-    // tone is the phase 1 renders', which the intro bakes in too.
+    // Emil's new zooms (19 Oct, the same in his 27 Oct set) end square on
+    // with the screen filling the frame's height; SupplySystem's runs a
+    // pixel past the top and three past the bottom. Only a user's own intro
+    // uses them (see TI_CUSTOM_CLIPS and the CMS's custom/). Corners from
+    // tools/screen-swap/intro.py's track; the tone is the phase 1 renders',
+    // which the intro bakes in too.
     smartdrawer_new_zoom: {
       tone: { saturation: 0.7, curve: [[0, 0], [36, 5], [64, 30], [180, 156], [220, 188], [240, 205], [255, 208]] },
       screen: { corners: [[243.46, 0.65], [1681.66, 0.65], [1681.63, 1079.34], [243.44, 1079.26]] }
+    },
+    supplysystem_new_zoom: {
+      tone: { saturation: 0.7, curve: [[0, 0], [36, 5], [64, 30], [180, 156], [220, 188], [240, 205], [255, 208]] },
+      screen: { corners: [[236.66, -1.22], [1682.67, -1.24], [1682.56, 1083.31], [236.66, 1083.16]] }
     }
   },
 

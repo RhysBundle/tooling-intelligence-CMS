@@ -31,6 +31,8 @@ body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -we
 
 .slide { position: absolute; inset: 0; opacity: 0; transition: opacity .45s ease; }
 .slide.is-active { opacity: 1; }
+/* A take or return clip that starts on the scene's own framing comes in as a cut (playAction in demo.js) */
+.slide.is-cut.is-active { transition: none; }
 .slide[hidden] { display: block; visibility: hidden; pointer-events: none; }
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -252,6 +254,14 @@ body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -we
 .coach-pause svg { width: 24px; height: 24px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.2)); }
 .coach-pause .icon-play, .coach-pause.is-paused .icon-pause { display: none; }
 .coach-pause.is-paused .icon-play { display: block; }
+/* Where the zoom ends with the screen further right (Emil's new renders, the
+   screen's right edge at x 1121), the pop-up narrows to the strip beside it.
+   demo.js setGeometry() sets the width; the icon goes to make room. */
+.coach.is-narrow { right: 12px; }
+.coach.is-narrow .coach-tip { box-sizing: border-box; max-width: var(--coach-w); padding: 10px 12px; font-size: 15px; line-height: 20px; }
+.coach.is-narrow .coach-tip.is-long { font-size: 14px; line-height: 19px; }
+.coach.is-narrow .coach-tip.is-longer { font-size: 13px; line-height: 17px; }
+.coach.is-narrow .coach-icon { display: none; }
 
 /* ---------- Stub: next ---------- */
 .slide-next { background: radial-gradient(ellipse 60% 70% at 70% 30%, #1d4f86, #0b1a2e 55%, #05080e); }

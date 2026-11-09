@@ -918,6 +918,10 @@
                                 <small>Instructions</small>
                                 <span>${instructionsOn(config) ? 'On' : 'Off'}</span>
                             </div>
+                            <div class="config-detail">
+                                <small>Intro clip</small>
+                                <span class="intro-cell" data-intro="${encodeURIComponent(String(config.user_id).toLowerCase())}">-</span>
+                            </div>
                         </div>
                         <div class="config-actions">
                             <button class="btn btn-small btn-edit" onclick="editConfig('${config.user_id}')">Edit</button>
@@ -925,9 +929,36 @@
                         </div>
                     </div>
                 `).join('');
+                loadIntroStates();
             } catch (error) {
                 console.error('Failed to load configs:', error);
             }
+        }
+
+        // Each user's own intro clip (push in, login and zoom with their
+        // screens), as the worker on SAGA reports it in custom/<id>/status.json.
+        // It makes one a minute or two after a save that changes the colours,
+        // logo, location, login type or the sequence's first step; until then
+        // the demo plays the usual clip. Where no worker runs (a local copy,
+        // Render) there's no status, so the cell shows a dash.
+        const INTRO_STATES = { ready: 'Ready', making: 'Being made', failed: "Couldn't be made", none: 'Not available' };
+        let introTimer = null;
+        async function loadIntroStates() {
+            clearTimeout(introTimer);
+            let making = false;
+            await Promise.all([...document.querySelectorAll('.intro-cell')].map(async cell => {
+                try {
+                    const response = await fetch(`custom/${cell.dataset.intro}/status.json`, { cache: 'no-store' });
+                    const st = response.ok ? await response.json() : null;
+                    cell.textContent = (st && INTRO_STATES[st.state]) || '-';
+                    cell.title = !st ? '' : st.state === 'none' ? st.why || '' : st.state === 'failed' ? st.error || '' :
+                        st.state === 'making' ? 'Started ' + new Date(st.since).toLocaleTimeString() : 'Made ' + new Date(st.at).toLocaleString();
+                    if (st && st.state === 'making') making = true;
+                } catch (e) {
+                    cell.textContent = '-';
+                }
+            }));
+            introTimer = setTimeout(loadIntroStates, making ? 10000 : 30000);
         }
         
         // Edit configuration

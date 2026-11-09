@@ -8,7 +8,7 @@ Replaces the Storyline file. Open `index.html` in Chrome or Edge, or serve the f
 2. User ID screen. Looks the ID up in the CMS when the demo is served over http(s), then in `data/configs.js`, ignoring case (see User IDs and the CMS).
 3. Environment clip for the customer's `location`, ending on the two products
 4. The hand-off to the product (see below): the End frame slides across to the SmartDrawer or the SupplyVend.
-5. The zoom and login clip for the customer's `solution` and `login_type`: one clip that zooms onto the screen and logs in (see Zoom and login clips). A user with their own intro made from Emil's new renders gets that instead, with no slide (see A user's own intro).
+5. The zoom and login clip for the customer's `solution` and `login_type`: one clip that zooms onto the screen and logs in (see Zoom and login clips). A user with their own intro made from Emil's new renders gets that instead, with no slide (see A user's own intro): from the CMS where the worker on SAGA has made one, or from the demo's own files.
 6. Only where there is no such clip: the zoom on its own, then the device login screen in HTML on the zoom's last frame
    - Typed logins: the user ID is typed on the on-screen keyboard and Enter is pressed
    - Badge and barcode logins: the physical login clip plays
@@ -40,7 +40,9 @@ https://saga.bundletraining.com/demos/tooling-intelligence/ serves this demo, bu
 3. Whatever the CMS hasn't got comes from `data/configs.js` and `data/sequences.js`. So an ID that is only in the data files (DEMO, BRANDED) still works, and a CMS user with no sequence there uses the data files' sequence of the same ID if there is one (STEUART on SAGA).
 4. If the CMS can't be reached, or hasn't answered in 6 seconds, the data files are used. An ID that isn't in them then gets "We couldn't reach the CMS".
 
-Submit shows "Checking..." while it asks. The stub at the end says where the config and the sequence came from.
+5. The demo also asks for the user's own intro, `custom/<id in lower case>/intro.json` beside the CMS, made by the worker on SAGA (see A user's own intro). None, or any problem with it, just means the usual clip.
+
+Submit shows "Checking..." while it asks. The stub at the end says where the config and the sequence came from, and which intro played.
 
 From file:// there is no CMS lookup, so the data files are the only source, and the demo still runs offline. The same goes for any copy served somewhere without a CMS at `cms/` beside it: the lookup gets a 404 and the data files are used. For an offline per-customer package, set `window.TI_CMS = null` in `data/cms.js`.
 
@@ -65,10 +67,12 @@ Every file is listed in `js/media.js`. A missing file shows a labelled placehold
 | Barcode login | `video/login-barcode.mp4` | The same |
 | SmartDrawer take and return | `video/take-smartdrawer.mp4`, `video/return-smartdrawer.mp4`, each with `img/*-start.jpg` | Done |
 | SupplySystem take and return | `video/take-supplysystem.mp4`, `video/return-supplysystem.mp4`, each with `img/*-start.jpg` | Done |
-| A user's own take and return clips | `custom/<user id>/take-<product>.mp4`, `return-<product>.mp4`, each with `-start.jpg`, listed in `data/custom-clips.js` | Made by `tools/screen-swap` (see Take and return clips) |
-| A user's own push in, login and zoom | `custom/<user id>/intro.mp4`, with `intro-start.jpg` and `intro-end.jpg`, listed in `data/custom-clips.js` | Trial, BRANDED only. Made by `tools/screen-swap/intro.py` from Emil's renders (see A user's own intro) |
+| A user's own take and return clips | `custom/<user id>/take-<product>.mp4`, `return-<product>.mp4` (swap.py), or `take-<product>-<stamp>.mp4` and so on (action.py, Emil's renders), each with `-start.jpg`, listed in `data/custom-clips.js` | Made by `tools/screen-swap` (see Take and return clips). BRANDED, Ferarri and TI_EXAMPLE_3 have action.py's |
+| A user's own push in, login and zoom | `custom/<user id>/intro.mp4`, with `intro-start.jpg` and `intro-end.jpg`, listed in `data/custom-clips.js`; or the same from the CMS's `custom/` | Made by `tools/screen-swap/intro.py` from Emil's renders (see A user's own intro). In the demo's files for BRANDED, STEUART, DEMO, Ferarri and TI_EXAMPLE_3 |
 
-The files in `assets/` are web copies of the originals in `GDrive-example/Videos`: H.264, CRF 22, audio removed (the zoom and action clips' audio tracks were silent), faststart. Stills converted from PNG to JPEG. The take and return clips come from `Videos/ActionVideos/Adjusted`: `*TakeOut.mp4` is take, `*CheckIn.mp4` is return, and `SupplyVend*` is SupplySystem.
+The files in `assets/` are web copies of the originals in `GDrive-example/Videos`: H.264, CRF 22, audio removed (the zoom and action clips' audio tracks were silent), faststart. Stills converted from PNG to JPEG.
+
+Every web video is tagged BT.709 (9 Nov). The renders are BT.709 but untagged: decoded as 709 they match the render PNGs to about 2 levels, while ffmpeg's default for untagged video, 601, is 3 to 9 levels off on saturated colours. Edge already played them as 709, but the stills had been pulled out as 601, so a still and its clip were a few levels apart in red (the zoom and login clips' end stills, which the HTML screens sit on, and the posters). The environment clips were tagged without re-encoding; `tools/build-login-clips.py` and `tools/screen-swap/swap.py` now read the renders as 709 and tag what they write, and the zoom and login clips and their stills were rebuilt; the take and return posters were pulled again. The take and return clips come from `Videos/ActionVideos/Adjusted`: `*TakeOut.mp4` is take, `*CheckIn.mp4` is return, and `SupplyVend*` is SupplySystem.
 
 ## Hand-off from the environment to the zoom
 
@@ -117,14 +121,51 @@ SmartDrawer's ROUGH renders (`zoom-login-smartdrawer-barcode.mp4`, `-rfid.mp4`, 
 
 ## A user's own intro
 
-A trial (19 Oct), on BRANDED only. Emil's new renders (`New-vids/renders/<product>/` next to the repo, not in git; its README.txt maps his file names) are a push in from the environment to the monitor, a login at that framing (RFID, barcode or typed), and a zoom that ends square on with the screen filling the frame's height. He left the device screen flat grey (120 in every channel) so each customer's own screens can go on it. `tools/screen-swap/intro.py` does that.
+Each user's own push in, login and zoom, with their login screen and their sequence's first screen in the device, made from Emil's renders. His second set (27 to 31 Oct) is used: `New-vids/renders/<product>/` next to the repo, not in git, hard links to `New-vids/NewVids` with the demo's names (its README.txt maps his file names; the first set, 19 Oct, is in `New-vids/renders-19oct`). He left the device screen flat grey (120 in every channel) so each customer's screens can go on it.
 
-- `intro.py track <product>`, once per product: finds the grey screen's edges in every frame and fits the render's camera to them (a 1926px focal length, measured from the screen's perspective, and a 4:3 screen). So where an edge is out of shot (the barcode login looks down at the scanner; the zoom ends with the screen's top and bottom at the frame's edges) the corners still follow the camera. Within 0.3px of the edges seen on the push in and the zoom, 1.6px in the barcode move's fastest frames, where the motion blur is about 15px. The RFID and typed logins are freeze frames, so they get one place. Writes `tools/screen-swap/tracks/intro-<product>.json`; `intro.py check <product>` draws a contact sheet of it.
-- `intro.py build <user id>`: draws the user's login screen and their sequence's first screen, as it arrives, in headless Edge at twice size; tones them as the renders tone a screen; and puts them in place of the grey with the render's motion blur. The login screen shows on the push in and the login, the first screen from the moment the user logs in (the scan, the badge tap) and through the zoom. The background goes in behind the transparent login clip from `<location>_bkgd`. Writes `assets/custom/<user id>/intro.mp4` (12.4s with a barcode login), its first and last frames, and `intro` under the user in `data/custom-clips.js`. About 2 minutes. Encoded as BT.709 and tagged so, or Edge shows the colours about 5 levels off and the HTML screen's arrival shows it.
+What the renders are, per product:
 
-The demo plays a user's intro in the zoom and login clip's place. It fades straight in from the environment clip, with no slide, because the push in starts on the cabinet in a spot of its own. The sequence's screens then sit on its last frame, mapped onto `login_screen.smartdrawer_new_zoom` in `js/media.js`, to within half a pixel. That's only while the config still has the colours, logo, location and login type, and the sequence the same first step, that it was made with (`made`); otherwise the usual clip and slide play.
+- A push in per location, from the environment clip's End framing (both cabinets, the new ones with the TI logo and stock) to the monitor, 113 frames (F1's SmartDrawer one 142), with a screen pass: the glass reflections, and on SmartDrawer the screen's matte in alpha.
+- The three logins (RFID, barcode, typed) and the zoom, comped over each location, all on one camera in every location. SmartDrawer's logins were rendered again (Fob 103 frames, Barcode 129, Login 249) and have screen passes with the hand held out of the matte; SupplySystem's are the 19 Oct ones (125, 125, 200), with no screen passes but a hand matte for the typed login.
+- The zoom starts where each login ends and finishes square on with the screen filling the frame's height, the same as in the first set.
 
-Not done yet: SupplySystem (not tracked; its login-moment frames in `intro.py` are guesses), and the RFID and typed builds have not been run. Known gaps: the push in doesn't start where the environment clip ends (asked of Emil), the instruction pop-up covers the screen's right-hand buttons at this framing, and the login screen's title bar keeps the device's grey and red.
+`tools/screen-swap/intro.py` does the work:
+
+- `intro.py track <product>`, once per product and again whenever the renders change: finds the grey screen's edges in every frame and fits the render's camera to them (a 1926px focal length and a 4:3 screen), so where an edge is out of shot (the barcode login looks down at the scanner; the zoom ends with the screen's top and bottom at the frame's edges) the corners still follow the camera. What the edges seen leave open keeps a smooth, steady path (`SMOOTH`, `HOLD`, and `HOLD_TURN` for the camera's turn: without it SupplySystem's zoom drifted until one side was 5% taller than the other once only its left and right edges were in shot). The logins and the zoom are tracked once; each location's push in for its own camera, the screen told apart from the other cabinet's by the screen pass. Within 0.2px of the edges seen on the still logins and the zooms, 1 to 2.5px in the push ins' and barcode logins' fastest frames, where the motion blur is 15px. Also finds the typed login's taps (below). Writes `tools/screen-swap/tracks/intro-<product>.json`; `intro.py check <product> [--location <location>]` draws a contact sheet of it. About 10 minutes a product the first time (decoding the renders), then a few.
+- `intro.py build <user id>`: draws the user's screens in headless Edge at twice size, tones them as the renders tone a screen, and puts them in place of the grey with the render's motion blur. The push in and the login show the login screen; from the moment the user logs in (the fob on the reader, frame 62; the card under the scanner, 72 on SmartDrawer and 66 on SupplySystem) the sequence's first screen shows, as it arrives, through the zoom. Writes `assets/custom/<user id>/intro.mp4` (11 to 15s, by login type), its first and last frames, and `intro` under the user in `data/custom-clips.js`. About 3 minutes. Encoded as BT.709 and tagged so.
+
+Where a screen pass gives the screen's matte (SmartDrawer), that says where our screen goes, so the typed login's hand stays in front of it exactly. Elsewhere our screen goes wherever the frame is still the flat grey, so a hand or card in front stays, and flat grey a pixel or two past the track's edge goes too, so no grey sliver shows. The pass's glass reflections and the hand's glow go on top at 60% (`REFLECT`), above the pass's darkest level. Clips with no pass (SupplySystem's logins, both zooms) carry the last pass frame's reflections on the screen itself, and the zoom fades them out, so its last frame is the plain screen the HTML takes over from.
+
+The typed login: Emil's finger rests on the login screen's User ID field first, then on five places on the keyboard, then on the keyboard's Enter (both products; found from the hand, where the fingertip comes to rest). So the field tap brings the keyboard up, each rest after it presses the key under the finger (lit, as the demo's own keyboard lights a key) and puts the next of the user ID's characters in the field, and Enter logs in. An ID longer than five characters puts two in at some taps; a shorter one passes over some. The key lit is the one under the finger, not always the character typed, since the finger's path is fixed.
+
+The demo plays a user's intro in the zoom and login clip's place. It fades straight in from the environment clip, with no slide: the push in starts on the End framing, but with Emil's new cabinets, so the fade swaps the old cabinets for the new. The sequence's screens then sit on its last frame, mapped onto `login_screen.<product>_new_zoom` in `js/media.js`, to within half a pixel. That's only while the config still has the colours, logo, location and login type, and the sequence the same first step, that it was made with (`made`); otherwise the usual clip and slide play. At this framing the screen's right edge is at x 1121 on the stage, so the instruction pop-up narrows to the strip beside it for the whole run (see Instructions and pause).
+
+### Made automatically on SAGA
+
+`tools/screen-swap/worker.py` keeps every CMS user's intro up to date without anyone running `intro.py`: it asks the CMS for its configs and sequences every 20 seconds, and makes the intro of any user whose intro is missing or was made with something that has since changed (colours, logo, location, login type, the sequence's first step, the renders' track, or `LOOK` in intro.py), one at a time, longest waiting first. It writes into the folder the CMS serves as `custom/` (`TI_CUSTOM_DIR`), per user `custom/<id in lower case>/`: the clip and its stills, `intro.json` (the entry the demo reads, with a stamp on each file's address so a browser doesn't keep an old copy) and `status.json` (making, ready, failed or none). A user deleted from the CMS has its folder removed; a failed build isn't tried again until something changes. The Configurations list in the CMS shows each user's state under Intro clip.
+
+It runs in its own container (`tools/screen-swap/Dockerfile`: Node 22, Chromium, Python with numpy and OpenCV from Debian, ffmpeg) with the repo, the renders and `custom/` mounted. To try it here: start the CMS (`npm start`), then `python tools/screen-swap/worker.py --cms http://localhost:3000/ --out ../custom --once --only BRANDED`, and open the demo over http with `?cms=http://localhost:3000/`.
+
+Setting it up on SAGA (not done yet):
+
+1. Copy the renders a build reads to `/opt/ti-demo/renders/<product>/`: per location `_pushin`, `_pushin_screen`, `_login_rfid`, `_login_barcode`, `_login_typed`, `_zoom`; SmartDrawer's `login_*_screen`; SupplySystem's `login_typed_hand_matte`. About 8.8GB as ProRes.
+2. Add to `/opt/ti-demo/docker-compose.yml`, and give `cms` the same folder read-only with `TI_CUSTOM_DIR: /custom`:
+
+   ```yaml
+   intro:
+     build: ./repo/demo/tools/screen-swap
+     container_name: ti-intro
+     restart: unless-stopped
+     volumes: [./repo:/app:ro, ./renders:/renders:ro, ./custom:/custom]
+     networks: [lrsnet]
+     cpus: 4        # leaves SAGA's own services room
+   ```
+
+3. In `update.sh`, restart `ti-intro` when `demo/tools/screen-swap/` changes, as it restarts `ti-cms` for the CMS's code.
+
+Every user in the SAGA CMS then gets an intro over the first half hour or so, test1 included.
+
+Not covered: the take and return clips are still the phase 1 renders with SupplyPro's logo, except a user's own from Emil's TakeOut and PutBack (`action.py`, see Take and return clips; BRANDED, Ferarri and TI_EXAMPLE_3 so far); the other cabinet's screen in the push in is lit grey, not Emil's flat grey, so it stays grey.
 
 ## Login screen
 
@@ -222,6 +263,18 @@ What changes on the screen: SmartDrawer's take shows Take with the product and i
 
 How: each render shows the phase 1 artwork as its screen, a few in a row (`tools/screen-swap/clips.py` says which, from which frame). `swap.py track <clip>`, run once per render, finds the screen in every frame by fitting that artwork to it, or where too little of the screen shows, by the optical flow of what's around it, and measures how out of focus it is (`tools/screen-swap/tracks/`). `build` draws the user's screens in headless Edge from `js/screens.js` (`tools/screen-swap/render.html`), tones them like the render, gives them each frame's focus and motion blur, and swaps them in, keeping the glass's reflections and leaving the hand in front where it is over the screen. About 1.5 minutes per clip. `swap.py check <clip>` makes a contact sheet of a track. Rerun `track` if a render changes.
 
+#### From Emil's renders (`action.py`, 9 Nov)
+
+Emil's second set has a take (TakeOut) and a return (PutBack) per location and product, with the TI cabinets and a flat grey screen. `tools/screen-swap/action.py build <user id>` puts the user's screens into the ones for their location, one clip each time the sequence takes or returns, into `assets/custom/<user id>/<kind>-<product>-<stamp>.mp4` with its first frame, and lists them in `data/custom-clips.js` (it replaces swap.py's for that user). Both products, every location. Built for BRANDED (SmartDrawer), Ferarri and TI_EXAMPLE_3 (SupplySystem).
+
+- Each clip starts and ends square on the screen, on the framing the user's intro ends on. SmartDrawer's holds still there for a second at each end; then the camera pulls back, the drawer opens, the hand opens the pocket, takes the item out (or puts it back) and shuts the lid, and the camera pushes back in (14s). SupplySystem's moves from the first frame: the camera drops to the lockers, so for about 3 seconds only a strip of the bottom of the screen is in shot, the hand opens a locker door, takes the box out (or puts it back) and shuts the door, and the camera comes back up (12s). The hand never touches the screen.
+- The screen shows Take (or Return) with the product and its door, as phase 1's 05_CheckOut_8, until the door is shut. SmartDrawer: frame 322 on the take, when the drawer is pushed in; 286 on the return, when the pocket's lid shuts (the camera rises before that drawer closes). SupplySystem: 304 on both, when the locker door swings shut. Then it shows what the demo shows next: the next step's screen as it arrives, the login screen with the log out message if the next step logs out, or the next clip's Take or Return screen if the next step is a door step.
+- SupplySystem's badge reader is lit in the zoom's render and not in these, so the difference between the zoom's last frame and the clip's first is laid on the clip and fades over its first 15 frames, carried with the screen's plane as the camera moves, and back over its last 15. The cut in and the fade out show nothing changing. SmartDrawer's ends differ only by render noise.
+- So the demo cuts straight to the clip (no fade: `is-cut` on the slide, only when the scene is on the clip's `framing`), and fades back to the next step over the clip's last frame, which shows the same screen. With the phase 1 zoom (no intro) it fades both ways, as the usual clips do.
+- The demo picks a clip by product and the stamp of the step after it (`<product>|<stamp>`), since that is the screen it ends on, and only for the location it was made for. A change to that step in the CMS falls back to the usual clip.
+- The screen pass is the matte (the hand is held out of it where it passes in front, SmartDrawer's take frames 341 to 365) and its reflections go on at 60%, coming in as the camera moves off and going as it settles, so the ends are the plain screen.
+- `action.py track <product>` tracks both renders once (`tracks/action-<product>.json`; the logins' method, against the renders on a plain background: SmartDrawer's `take_alpha` and `return_alpha`, SupplySystem's `take` and `return`). At the ends the screen fills the frame's height, so only its sides are in shot; any frame whose edges all lie on the zoom's framing (from `login_screen` in media.js, within half a pixel) is given all four sides from it, so the ends land on that framing exactly. SmartDrawer: corners within 1.0 px (take) and 1.6 px (return) of the edges seen. SupplySystem: for about 2 seconds only the screen's bottom edge and a stub of its left are in shot, which leaves the camera's turn free, and the edges seen can then be met by a screen tipped away and squashed in the frame (that happened with a lighter hold: 12.6 wide to 1 tall, Emil's grey showing above our screen). So its turn is held harder than intro.py holds it (`hold` in PRODUCTS, HOLD_TURN 1.0): within 2.4 px (take) and 2.6 px (return), and 1.28 to 1.36 wide to 1 tall all through. `track` prints that shape range; a 4:3 screen seen near square on is about 1.33, so a figure far from it means a squashed fit. `action.py check <product> take` makes a contact sheet. About 3 to 4 minutes per clip to build.
+
 Product details (name, part number, menu number, unit of issue, quantity, door code) come from `shared/catalogue.js`. A search that matches fewer than six products is padded with the rest of their categories, so the list never looks empty. Thumbnails are placeholder line drawings until TI send photos.
 
 Step-through mode: Next sits in the middle of the device's title bar, the one place that is empty on every screen. The right arrow, Space, Enter and Page Down do the same.
@@ -260,7 +313,7 @@ What stays as it is:
 
 ## Instructions and pause
 
-From the environment clip to the end of the sequence, the bottom right of the stage holds an instruction pop-up and, under it, a round pause button. Both are in the demo's own blue to teal, the same for every customer. The pop-up is at most 300px wide, which keeps it clear of the device's screen on both products; a long line wraps upward.
+From the environment clip to the end of the sequence, the bottom right of the stage holds an instruction pop-up and, under it, a round pause button. Both are in the demo's own blue to teal, the same for every customer. The pop-up is at most 300px wide, which keeps it clear of the device's screen on both products' phase 1 clips; a long line wraps upward. A user's own intro (Emil's new zoom) ends with the screen's right edge at x 1121, past the pop-up's usual left edge at 956 and over the Admin Menu and Logout buttons, so for those runs the pop-up narrows to the 135px strip beside the screen, 12px from the stage's edge, with no icon and 15px text (14 and 13 for the long lines). `setGeometry()` in demo.js works that out from the framing, for the whole run, so the pop-up doesn't change shape partway.
 
 The pop-up says what the operator does now, in one line from `../shared/instructions.js`. It changes as each step starts. There is none during the environment clip and the slide.
 

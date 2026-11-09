@@ -80,14 +80,17 @@ def source(clip):
 
 
 def frame_dir(clip):
-    """The render's frames as PNGs, kept in the temp folder between runs."""
+    """The render's frames as PNGs, kept in the temp folder between runs.
+    Read as BT.709: the renders are 709 but untagged, and ffmpeg's default
+    for that (601) is a few levels off on saturated colours."""
     src = source(clip)
     d = CACHE / clip
-    stamp = f'{src}|{src.stat().st_size}|{src.stat().st_mtime}'
+    stamp = f'{src}|{src.stat().st_size}|{src.stat().st_mtime}|709'
     if not ((d / 'source.txt').exists() and (d / 'source.txt').read_text() == stamp):
         shutil.rmtree(d, ignore_errors=True)
         d.mkdir(parents=True)
-        subprocess.run(['ffmpeg', '-v', 'error', '-i', str(src), str(d / '%04d.png')], check=True)
+        subprocess.run(['ffmpeg', '-v', 'error', '-i', str(src), '-vf', 'scale=in_color_matrix=bt709:in_range=tv,format=rgb24',
+                        str(d / '%04d.png')], check=True)
         (d / 'source.txt').write_text(stamp)
     return d
 
@@ -662,8 +665,13 @@ def composite(clip, ours, out_path, poster_path):
     arts = [tone(artwork(s['art'])) for s in c['segments']]
     ours = [tone(o) for o in ours]
     ones = np.ones((SH, SW), np.float32)
+    # BT.709 and tagged so, as the other web copies, so the browser plays it
+    # in the colours the frames were read in
     enc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{FW}x{FH}',
-                            '-r', '30', '-i', '-', '-c:v', 'libx264', '-crf', '22', '-pix_fmt', 'yuv420p',
+                            '-r', '30', '-i', '-', '-vf', 'scale=out_color_matrix=bt709:out_range=tv,'
+                            'setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv',
+                            '-c:v', 'libx264', '-crf', '22', '-pix_fmt', 'yuv420p', '-colorspace', 'bt709',
+                            '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
                             '-movflags', '+faststart', '-an', str(out_path)], stdin=subprocess.PIPE)
     for f in range(1, n + 1):
         frame = read_frame(clip, f)
