@@ -190,6 +190,7 @@ The sequence comes from the CMS or from `data/sequences.js` (see User IDs and th
 | TI_EXAMPLE_2 | Steuart's Customer Example 2: a product kit, one search and select, then four takes (warehouse, barcode) |
 | TI_EXAMPLE_3 | Steuart's Customer Example 3: RFID login, three allocation codes, a lot managed dust mask with its lot number, take (SupplySystem, cleanroom) |
 | BRANDED | test1's run, with a customer's colours and a placeholder logo on the screens (see Customer colours and logo) |
+| F1-SmartDrawer, F1-SupplySystem, CNC-, Hangar-, Cleanroom-, TrainDepot-, Warehouse- (each with -SmartDrawer and -SupplySystem) | Every environment with each product: barcode login, test1's run, Bundle's blue and yellow and white logo (`assets/img/logos/bundle-logo-white.svg`). Also in the SAGA CMS |
 
 The three TI_EXAMPLE IDs are Steuart's own customer examples, step for step, from `examples/steuart-example-sequences.json`, for testers. His lists name the steps and login types only, so the products, search terms, prompts and lot number were chosen from the catalogue and the phase 1 screens. "Info window enter quantity" in Example 1 is the quantity screen. Their configs are in the demo, the local CMS and the SAGA CMS, not the live one.
 

@@ -38,5 +38,32 @@ window.TI_CONFIGS = [
   // environments were picked to suit the products.
   { user_id: 'TI_EXAMPLE_1', solution: 'smartdrawer',  login_type: 'login_with_password', location: 'cnc_machine_shop' },
   { user_id: 'TI_EXAMPLE_2', solution: 'smartdrawer',  login_type: 'barcode', location: 'amazon_warehouse' },
-  { user_id: 'TI_EXAMPLE_3', solution: 'supplysystem', login_type: 'rfid',    location: 'medical_cleanroom' }
+  { user_id: 'TI_EXAMPLE_3', solution: 'supplysystem', login_type: 'rfid',    location: 'medical_cleanroom' },
+
+  // Every environment with each product (10 Nov), in Bundle's colours and
+  // logo: blue screens, yellow buttons. Barcode login, test1's run.
+  { user_id: 'F1-SmartDrawer', solution: 'smartdrawer', login_type: 'barcode', location: 'f1_automotive',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' },
+  { user_id: 'F1-SupplySystem', solution: 'supplysystem', login_type: 'barcode', location: 'f1_automotive',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' },
+  { user_id: 'CNC-SmartDrawer', solution: 'smartdrawer', login_type: 'barcode', location: 'cnc_machine_shop',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' },
+  { user_id: 'CNC-SupplySystem', solution: 'supplysystem', login_type: 'barcode', location: 'cnc_machine_shop',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' },
+  { user_id: 'Hangar-SmartDrawer', solution: 'smartdrawer', login_type: 'barcode', location: 'aircraft_hangar',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' },
+  { user_id: 'Hangar-SupplySystem', solution: 'supplysystem', login_type: 'barcode', location: 'aircraft_hangar',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' },
+  { user_id: 'Cleanroom-SmartDrawer', solution: 'smartdrawer', login_type: 'barcode', location: 'medical_cleanroom',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' },
+  { user_id: 'Cleanroom-SupplySystem', solution: 'supplysystem', login_type: 'barcode', location: 'medical_cleanroom',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' },
+  { user_id: 'TrainDepot-SmartDrawer', solution: 'smartdrawer', login_type: 'barcode', location: 'rail_depot',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' },
+  { user_id: 'TrainDepot-SupplySystem', solution: 'supplysystem', login_type: 'barcode', location: 'rail_depot',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' },
+  { user_id: 'Warehouse-SmartDrawer', solution: 'smartdrawer', login_type: 'barcode', location: 'amazon_warehouse',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' },
+  { user_id: 'Warehouse-SupplySystem', solution: 'supplysystem', login_type: 'barcode', location: 'amazon_warehouse',
+    theme_colour: '#2757e2', button_colour: '#fdbd23', logo: 'assets/img/logos/bundle-logo-white.svg' }
 ];

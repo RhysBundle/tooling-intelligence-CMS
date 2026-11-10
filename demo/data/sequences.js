@@ -178,5 +178,199 @@ window.TI_SEQUENCES = {
       { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
       { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
     ]
+  },
+
+  // Every environment with each product, Bundle branded, all on test1's run
+  'F1-SmartDrawer': {
+    user_id: 'F1-SmartDrawer',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
+  },
+  'F1-SupplySystem': {
+    user_id: 'F1-SupplySystem',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
+  },
+  'CNC-SmartDrawer': {
+    user_id: 'CNC-SmartDrawer',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
+  },
+  'CNC-SupplySystem': {
+    user_id: 'CNC-SupplySystem',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
+  },
+  'Hangar-SmartDrawer': {
+    user_id: 'Hangar-SmartDrawer',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
+  },
+  'Hangar-SupplySystem': {
+    user_id: 'Hangar-SupplySystem',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
+  },
+  'Cleanroom-SmartDrawer': {
+    user_id: 'Cleanroom-SmartDrawer',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
+  },
+  'Cleanroom-SupplySystem': {
+    user_id: 'Cleanroom-SupplySystem',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
+  },
+  'TrainDepot-SmartDrawer': {
+    user_id: 'TrainDepot-SmartDrawer',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
+  },
+  'TrainDepot-SupplySystem': {
+    user_id: 'TrainDepot-SupplySystem',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
+  },
+  'Warehouse-SmartDrawer': {
+    user_id: 'Warehouse-SmartDrawer',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
+  },
+  'Warehouse-SupplySystem': {
+    user_id: 'Warehouse-SupplySystem',
+    name: 'M10 plug gauge take and return',
+    playback_mode: 'auto',
+    default_dwell_ms: 3000,
+    steps: [
+      { type: 'login_method', params: { method: 'barcode' }, text: {}, dwell_ms: null },
+      { type: 'product_search', params: { mode: 'typed', category: 'inspection' }, text: { query: 'm10' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'take', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'enter_quantity', params: {}, text: { prompt: '', quantity: '1' }, dwell_ms: null },
+      { type: 'select_product', params: { product: 'plug_gauge' }, text: {}, dwell_ms: 2500 },
+      { type: 'select_action', params: { action: 'return', control: 'onscreen' }, text: {}, dwell_ms: 2500 },
+      { type: 'logout', params: {}, text: { message: 'You are now logged out.' }, dwell_ms: null }
+    ]
   }
 };
