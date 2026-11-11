@@ -810,6 +810,25 @@ def encoder(video):
                              '-movflags', '+faststart', '-an', '-f', 'mp4', str(video)], stdin=subprocess.PIPE)
 
 
+def check_video(video, count):
+    """Stops a broken video from replacing a good one: the file must open as
+    H.264 and hold every frame written to it. ffmpeg can finish without an
+    error and still leave a file with no video in it (11 Nov: two workers
+    wrote DEMO_SMARTDRAWER's intro at once, and the demo showed the
+    placeholder while the CMS said ready)."""
+    out = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-count_packets',
+                          '-show_entries', 'stream=codec_name,nb_read_packets', '-of', 'json', str(video)],
+                         capture_output=True, text=True)
+    try:
+        s = json.loads(out.stdout)['streams'][0]
+        got = int(s['nb_read_packets'])
+    except (ValueError, KeyError, IndexError):
+        raise RuntimeError(f'{Path(video).name} has no video in it') from None
+    if s.get('codec_name') != 'h264' or got != count:
+        raise RuntimeError(f'{Path(video).name} has {got} frames of {s.get("codec_name")}, '
+                           f'expected {count} of h264')
+
+
 # Bump when a change here alters how an intro looks, so the worker on SAGA
 # (worker.py) makes every intro again
 LOOK = 1
@@ -954,6 +973,7 @@ def build(config, seq, out_dir, log=print, tick=None):
     enc.stdin.close()
     if enc.wait():
         raise RuntimeError('ffmpeg failed')
+    check_video(part, count)
     cv2.imwrite(str(out_dir / 'intro-start.jpg'), first_frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
     cv2.imwrite(str(out_dir / 'intro-end.jpg'), last, [cv2.IMWRITE_JPEG_QUALITY, 92])
     os.replace(part, out_dir / 'intro.mp4')

@@ -329,6 +329,7 @@ def build_clip(product, location, kind, screens, out_video, out_poster, log=prin
     enc.stdin.close()
     if enc.wait():
         raise RuntimeError('ffmpeg failed')
+    intro.check_video(part, count)
     cv2.imwrite(str(out_poster), first, [cv2.IMWRITE_JPEG_QUALITY, 92])
     os.replace(part, out_video)
     log(f'{out_video.name}: {count} frames ({count / 30:.1f}s)')
