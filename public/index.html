@@ -300,6 +300,7 @@
             background: var(--bg-dark);
             padding: 12px;
             border-radius: 8px;
+            min-width: 0;
         }
         
         .config-detail small {
@@ -597,7 +598,8 @@
         .video-steps { margin: 0 0 12px 18px; padding: 0; color: var(--text-primary); font-size: 0.88rem; line-height: 1.5; }
         .video-steps li { margin-bottom: 6px; }
         .video-steps li span { color: var(--text-secondary); }
-        .video-state { display: flex; flex-direction: column; gap: 5px; min-width: 150px; }
+        /* Shrinks to its grid column and wraps, rather than running past the card */
+        .video-state { display: flex; flex-direction: column; gap: 5px; min-width: 0; overflow-wrap: break-word; }
         .video-state .is-ready { color: var(--success); }
         .video-state .is-failed { color: var(--danger); }
         .video-steps a { color: var(--accent); }
