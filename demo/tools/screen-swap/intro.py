@@ -927,7 +927,10 @@ def build(config, seq, out_dir, log=print, tick=None):
     if login == 'typed' and not passes:
         hands = frames(render_path(product, spec['hand'][0]), 'gray')
     scr = None
-    for f, img in enumerate(frames(render_path(product, f'{location}_login_{login}.mov'))):
+    # Read only as many frames as were tracked: SmartDrawer's barcode login
+    # in the warehouse and the CNC shop has a 130th frame, a copy of the
+    # 129th, which its screen pass and the track don't have
+    for f, img in enumerate(frames(render_path(product, f'{location}_login_{login}.mov'), count=len(c))):
         scr = next(passes) if passes else None
         hand = next(hands) if hands else None
         if f == 0:
@@ -944,7 +947,7 @@ def build(config, seq, out_dir, log=print, tick=None):
     # The zoom, from its second frame, with the reflections fading out
     c = np.float32(tr['clips']['zoom']['corners'])
     n = len(c)
-    for f, img in enumerate(frames(render_path(product, f'{location}_zoom.mov'))):
+    for f, img in enumerate(frames(render_path(product, f'{location}_zoom.mov'), count=n)):
         if f == 0:
             continue
         emit(put_screen(img, c, f, login_screen_at(10 ** 6), refl=carry.at(c[f], 1 - f / (n - 1))))
