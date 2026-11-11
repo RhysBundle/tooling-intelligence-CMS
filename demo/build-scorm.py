@@ -33,7 +33,7 @@ SHARED = ROOT.parent / 'shared'
 INCLUDE = ['index.html', 'css', 'js', 'data', 'assets']
 SHARED_FILES = ['catalogue.js', 'event-types.js', 'instructions.js', 'sequence-validator.js', 'theme.js']
 SKIP_NAMES = {'README.txt', '.DS_Store', 'Thumbs.db'}
-TITLE = 'Learn about our innovative inventory management solutions'
+TITLE = 'Learn About Our Innovative Inventory Management Solutions'
 
 
 def collect():
