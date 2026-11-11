@@ -199,9 +199,11 @@ The login is still driven by the config's `login_type`, so the sequence's own lo
 Each step:
 
 1. Its screen cuts in, as screens do on the device.
-2. Its arrival plays: 500ms to read, then the cursor presses anything that moves the device on first (Product Category), then it taps each field it types into and types on the on-screen keyboard (see below), or the device fills the field itself after 1.2s (a scan, a scale reading). 400ms later the results come up, then 600ms and the cursor moves to the row or knob it picks, which is highlighted.
+2. Its arrival plays: 750ms to read, then the cursor presses anything that moves the device on first (Product Category), then it taps each field it types into and types on the on-screen keyboard (see below), or the device fills the field itself after 1.8s (a scan, a scale reading). 600ms later the results come up, then 900ms and the cursor moves to the row or knob it picks, which is highlighted.
 3. It holds for its dwell from the CMS (default 3s), or in step-through mode until Next.
-4. Its exit plays: the cursor moves to the button that leads on and clicks it (250ms), and the next step cuts in.
+4. Its exit plays: the cursor moves to the button that leads on and clicks it (375ms), and the next step cuts in.
+
+These timings, the cursor's moves and clicks and the keyboard's are all `PACE` (1.5) times what was first built, at Rhys's ask on 11 Nov (50% slower). `PACE` at the top of `js/demo.js` changes them all; the click animation in `css/demo.css` is scaled by hand to match. The scene's transitions and the dwell are not scaled. A test1 run went from 81 to 84 seconds.
 
 Every event type now has a screen or a clip. Both products use the same screens, as the phase 1 artwork for both is the same UI, laid out at its own 1024x768 and mapped onto the render's screen (see Zoom and login clips). `logout` shows the device's login screen in HTML (`TIScreens.login`).
 
@@ -233,7 +235,7 @@ Reference: `GDrive-example/Videos/ActionVideos/*.MOV` are phone videos of the re
 
 An arrow cursor shows what the automatic screens do: it moves to each field before it is typed into, to the row or knob being picked, and to each button before it is pressed, and clicks with a blue ring. The typed login uses it too, for the User ID field and Enter.
 
-- A move takes 350 to 900ms, longer the further it goes (`MOVE_*` at the top of `js/demo.js`).
+- A move takes 525 to 1350ms, longer the further it goes (`MOVE_*` at the top of `js/demo.js`, times `PACE`).
 - It first shows low on the panel, the first time it is needed. It goes when a take or return clip starts, as the operator walks to the drawer, and shows again from the same place after it. It goes after Logout is pressed.
 - It sits outside the device screen, so the render tone does not touch it, and it moves even with reduced motion turned on, because it is part of the content.
 

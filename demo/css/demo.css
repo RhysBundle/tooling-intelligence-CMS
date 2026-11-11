@@ -236,8 +236,9 @@ body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -we
   background: rgba(74, 144, 217, .25);
   box-shadow: 0 0 0 2px rgba(255, 255, 255, .85), inset 0 0 0 2px rgba(255, 255, 255, .85);
 }
-.cursor.is-clicking svg { animation: cursor-press .22s ease-out; }
-.cursor.is-clicking::before { animation: cursor-ring .6s ease-out; }
+/* 1.5 times the first timings (.22s, .6s), as PACE in demo.js */
+.cursor.is-clicking svg { animation: cursor-press .33s ease-out; }
+.cursor.is-clicking::before { animation: cursor-ring .9s ease-out; }
 @keyframes cursor-press { 40% { transform: scale(.85); } }
 @keyframes cursor-ring {
   from { transform: scale(.25); opacity: 1; }

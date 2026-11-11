@@ -34,19 +34,24 @@
   var SLIDE_MS = 1500;           // slide image moves across to the product
   var SETTLE_MS = 200;           // pause on the product before the zoom
   var ZOOM_FADE_MS = 500;        // slide image crossfades to the zoom's first frame
-  var TYPE_DELAY_MS = 110;       // per character, typed logins and typed screen text
+  // The cursor, its clicks and the actions within each step run at this pace:
+  // 1.5 is 50% slower than first built (Rhys, 11 Nov), so viewers can follow.
+  // The scene's own transitions and each step's dwell are not scaled. The
+  // click animation in demo.css is scaled to match by hand.
+  var PACE = 1.5;
+  var TYPE_DELAY_MS = 110 * PACE;    // per character, typed logins and typed screen text
   // The sequence. A step's dwell (from the CMS) is the hold after these.
-  var READ_MS = 500;             // a new screen shows before anything is typed into it
-  var AFTER_TYPE_MS = 400;       // typed text shows before the results come up
-  var PICK_MS = 600;             // a screen shows before its row or knob is picked
-  var AUTO_MS = 1200;            // a scan, or the scale settling, takes this long
-  var PRESS_MS = 250;            // a button press shows for this long
+  var READ_MS = 500 * PACE;      // a new screen shows before anything is typed into it
+  var AFTER_TYPE_MS = 400 * PACE;    // typed text shows before the results come up
+  var PICK_MS = 600 * PACE;      // a screen shows before its row or knob is picked
+  var AUTO_MS = 1200 * PACE;     // a scan, or the scale settling, takes this long
+  var PRESS_MS = 250 * PACE;     // a button press shows for this long
   var NEXT_GUARD_MS = 250;       // step-through ignores a second Next this soon
-  var LANDED_MS = 600;           // a zoom and login clip's last frame holds before the sequence
+  var LANDED_MS = 600 * PACE;    // a zoom and login clip's last frame holds before the sequence
   // The cursor. A move takes longer the further it goes, within these limits.
-  var MOVE_MIN_MS = 350;
-  var MOVE_MAX_MS = 900;
-  var MOVE_MS_PER_PX = 0.4;      // device px, so a move across the panel is ~800ms
+  var MOVE_MIN_MS = 350 * PACE;
+  var MOVE_MAX_MS = 900 * PACE;
+  var MOVE_MS_PER_PX = 0.4 * PACE;   // device px, so a move across the panel is ~1200ms
   var CURSOR_FADE_MS = 250;      // matches .cursor in demo.css
   // Where it first shows, low on the panel, as a share of the device's screen
   // (1100, 880 on SmartDrawer's, which fills the frame)
@@ -54,11 +59,11 @@
   var STAGE_SCALE = 1280 / 1920;  // the device layer's 1920x1080 px onto the stage
   // The on-screen keyboard. Key to key moves are quicker than the cursor's
   // other moves, as a typist's are.
-  var KEY_MOVE_MIN_MS = 160;
-  var KEY_MOVE_MAX_MS = 420;
-  var KEY_MS_PER_PX = 0.25;
-  var KEY_PRESS_MS = 150;        // a key shows red for this long
-  var KEYBOARD_READ_MS = 400;    // the keyboard shows before the first key
+  var KEY_MOVE_MIN_MS = 160 * PACE;
+  var KEY_MOVE_MAX_MS = 420 * PACE;
+  var KEY_MS_PER_PX = 0.25 * PACE;
+  var KEY_PRESS_MS = 150 * PACE;     // a key shows red for this long
+  var KEYBOARD_READ_MS = 400 * PACE; // the keyboard shows before the first key
 
   var LABELS = {
     location: {
