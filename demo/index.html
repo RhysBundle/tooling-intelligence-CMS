@@ -40,6 +40,14 @@
           <label class="visually-hidden" for="userid">User ID</label>
           <input class="userid-input" id="userid" name="userid" type="text" placeholder="Type your user ID here..." spellcheck="false" autocapitalize="off" maxlength="40">
           <p class="userid-error" id="userid-error" role="alert"></p>
+          <!-- Shown after Submit while the run's clips download (loadThenBegin in demo.js) -->
+          <div class="userid-loading" id="userid-loading" role="progressbar" aria-label="Loading the demo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden>
+            <div class="loading-head">
+              <span class="loading-label" id="loading-title"></span>
+              <span class="loading-pct" id="loading-pct">0%</span>
+            </div>
+            <div class="loading-track"><div class="loading-fill" id="loading-fill"></div></div>
+          </div>
           <button class="btn btn-submit" type="submit">Submit</button>
         </form>
       </section>

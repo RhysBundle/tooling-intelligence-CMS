@@ -23,7 +23,10 @@
   var PARAMS = new URLSearchParams(window.location.search);
 
   var PLACEHOLDER_SECONDS = 4;   // a missing clip continues after this
-  var LOAD_TIMEOUT_MS = 12000;   // a clip that never loads is treated as missing
+  // A clip that never loads is treated as missing. Long, because the loading
+  // bar waits for every clip first and a slow link (SAGA from New Zealand)
+  // can take well over 12s; a missing file fails at once with an error.
+  var LOAD_TIMEOUT_MS = 60000;
   var FADE_MS = 450;             // matches .slide transition in demo.css
   // The hand-off from the environment to the zoom. Keep in step with demo.css.
   var SWAP_MS = 200;             // video's last frame crossfades to the slide image
@@ -1328,7 +1331,132 @@
     state.cmsIntro = found.intro || null;
     state.cmsClips = found.clips || null;
     prepare(config, sequence);
-    begin();
+    loadThenBegin();
+  }
+
+  /* ---------- Loading bar ---------- */
+  // Every clip the run plays is downloaded before the scene starts, with a
+  // bar under the ID box. Started together over a slow link, the clips share
+  // the bandwidth, so the first ones stall and the later ones missed the load
+  // timeout and showed as placeholders. From disk they are ready at once, so
+  // the bar only shows if loading takes longer than LOADER_SHOW_AFTER_MS.
+  var loader = document.getElementById('userid-loading');
+  var loaderFill = document.getElementById('loading-fill');
+  var loaderPct = document.getElementById('loading-pct');
+  var loaderTitle = document.getElementById('loading-title');
+  var LOADER_SHOW_AFTER_MS = 250;
+  var LOADER_TICK_MS = 60;
+  var LOADER_HOLD_MS = 500;   // at 100% before the scene fades in
+  var LOADER_STALL_MS = 4000; // see clipProgress
+
+  function runClips() {
+    var list = [slots.env, slots.zoom, slots.take, slots['return']];
+    ['take', 'return'].forEach(function (kind) {
+      Object.keys(customSlots[kind]).forEach(function (p) { list.push(customSlots[kind][p]); });
+    });
+    return list.filter(function (s) { return s && s.def && s.def.video; });
+  }
+
+  // 0 to 1 for one clip. 1 once the browser says it can play through, or the
+  // file is missing (it will show its placeholder). Some browsers (Safari,
+  // data saver) stop fetching ahead of play and never say so, so a clip that
+  // can start and has stopped growing for LOADER_STALL_MS counts as ready.
+  function clipProgress(slot, now) {
+    var v = slot.video;
+    if (slot.missing === true || !v || v.readyState >= 4) return 1;
+    var got = 0;
+    if (v.buffered.length && v.duration) got = v.buffered.end(0) / v.duration;
+    if (got > (slot.got || 0) || !slot.grewAt) { slot.got = got; slot.grewAt = now; }
+    if (v.readyState >= 2 && now - slot.grewAt > LOADER_STALL_MS) return 1;
+    return Math.min(got, 0.95);
+  }
+
+  function loadThenBegin() {
+    var run = state.run;
+    var clips = runClips();
+    var t0 = Date.now();
+    var shown = 0;
+    var finishing = false;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Loading...';
+    input.readOnly = true;
+    var timer = setInterval(tick, LOADER_TICK_MS);
+    tick();
+
+    function tick() {
+      if (run !== state.run) { clearInterval(timer); return; }
+      var now = Date.now();
+      var sum = 0, ready = 0;
+      clips.forEach(function (s) {
+        var p = clipProgress(s, now);
+        sum += p;
+        if (p >= 1) ready += 1;
+      });
+      // The slide image is needed when the environment clip ends
+      var panDone = !panImg.getAttribute('src') || panImg.complete;
+      var done = ready === clips.length && panDone;
+      var target = done ? 1 : clips.length ? sum / clips.length : 0;
+
+      if (!loader.classList.contains('is-shown')) {
+        if (done) { clearInterval(timer); go(); return; }
+        if (now - t0 < LOADER_SHOW_AFTER_MS) return;
+        showLoader();
+      }
+      // Eases toward the target and never goes back
+      shown = Math.max(shown, shown + (target - shown) * 0.18);
+      if (done && 1 - shown < 0.004) shown = 1;
+      setLoader(shown);
+      if (shown === 1 && !finishing) {
+        finishing = true;
+        clearInterval(timer);
+        loader.classList.add('is-done');
+        loaderTitle.textContent = pathway() + ' is ready';
+        setTimeout(function () { if (run === state.run) go(); }, LOADER_HOLD_MS);
+      }
+    }
+
+    function go() {
+      begin();
+      // Out of sight once the scene has faded in
+      setTimeout(function () {
+        if (run !== state.run) return;
+        hideLoader();
+        resetSubmit();
+      }, FADE_MS + 50);
+    }
+  }
+
+  // The user ID as the CMS or the data files have it, so "BRANDED's pathway"
+  function pathway() {
+    return (state.config ? state.config.user_id : input.value.trim()) + "'s pathway";
+  }
+
+  function showLoader() {
+    error.textContent = '';
+    loaderTitle.textContent = 'Preparing ' + pathway();
+    loader.hidden = false;
+    void loader.offsetWidth; // so the fade in runs
+    loader.classList.add('is-shown');
+  }
+
+  function setLoader(p) {
+    var pct = Math.round(p * 100);
+    loader.style.setProperty('--p', p.toFixed(4));
+    loaderPct.textContent = pct + '%';
+    loader.setAttribute('aria-valuenow', pct);
+  }
+
+  function hideLoader() {
+    loader.classList.remove('is-shown', 'is-done');
+    loader.hidden = true;
+    loaderTitle.textContent = '';
+    setLoader(0);
+  }
+
+  function resetSubmit() {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit';
+    input.readOnly = false;
   }
 
   function showNext(note) {
@@ -1364,6 +1492,8 @@
     showCoach(false);
     state.busy = false;
     state.config = null;
+    hideLoader();
+    resetSubmit();
     input.value = '';
     ['env-media', 'zoom-media', 'login-media', 'take-media', 'return-media'].forEach(function (id) { document.getElementById(id).innerHTML = ''; });
     removeCustomClips();

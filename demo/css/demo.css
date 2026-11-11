@@ -124,6 +124,50 @@ body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -we
   min-height: 24px; text-align: center; font-size: 17px; color: var(--error);
 }
 .btn-submit { top: 505px; background: linear-gradient(90deg, var(--submit-a), var(--submit-b)); }
+.btn:disabled { cursor: default; filter: saturate(.75) brightness(.92); }
+
+/* Loading bar under the ID box, in the error line's place, while the run's
+   clips download. --p is 0 to 1, set by demo.js. */
+.userid-loading {
+  position: absolute; left: 290px; top: 428px; width: 700px; z-index: 3;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.userid-loading[hidden] { display: none; }
+.userid-loading.is-shown { opacity: 1; transform: none; }
+.loading-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 9px;
+}
+.loading-label { font-size: 15px; font-weight: 600; color: #fff; }
+.loading-pct {
+  font-weight: 700; font-size: 20px; line-height: 1; color: #fff;
+  font-variant-numeric: tabular-nums; transition: color .3s ease;
+}
+.loading-track {
+  position: relative; height: 10px; border-radius: 5px; overflow: hidden;
+  background: rgba(255,255,255,.12); box-shadow: inset 0 1px 2px rgba(0,0,0,.45);
+}
+.loading-fill {
+  position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p, 0) * 100%);
+  border-radius: 5px; overflow: hidden; z-index: 1;
+  background: linear-gradient(90deg, var(--submit-a), var(--submit-b));
+  box-shadow: 0 0 14px rgba(79,179,164,.55);
+  transition: width .15s linear;
+}
+/* A sheen that runs along the filled part while it loads, and a faint one
+   along the whole track, so the bar still moves before the first bytes */
+.loading-fill::after, .loading-track::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -140px; width: 140px;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.38) 50%, transparent);
+  animation: loading-sheen 1.5s ease-in-out infinite;
+}
+.loading-track::after { width: 220px; left: -220px; opacity: .3; animation-duration: 2.2s; }
+@keyframes loading-sheen { to { left: 100%; } }
+.userid-loading.is-done .loading-fill::after,
+.userid-loading.is-done .loading-track::after { animation: none; opacity: 0; }
+.userid-loading.is-done .loading-pct { color: var(--submit-b); }
+@media (prefers-reduced-motion: reduce) { .loading-fill::after, .loading-track::after { animation: none; opacity: 0; } }
 
 /* ---------- Slide from the products to the zoom ----------
    frame1080 is a layer in the renders' own 1920x1080 pixels, scaled to the

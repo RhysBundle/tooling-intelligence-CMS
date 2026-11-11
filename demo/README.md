@@ -44,6 +44,14 @@ https://saga.bundletraining.com/demos/tooling-intelligence/ serves this demo, bu
 
 Submit shows "Checking..." while it asks. The stub at the end says where the config and the sequence came from, and which intro played.
 
+## Loading bar
+
+Once the ID is found, every clip the run plays (environment, zoom or intro, take, return, and the user's own take and return clips) downloads before the scene starts. If that takes longer than 250ms, a bar shows under the ID box saying "Preparing BRANDED's pathway" (the user ID as stored) with a percentage, and Submit reads "Loading...". At 100% it says "BRANDED's pathway is ready", holds for half a second, then the scene fades in. From disk, or on a fast link, everything is ready at once and the bar never shows.
+
+Added 11 Nov after a viewer in New Zealand watched the SAGA demo: the clips all downloaded at once from Germany, so the environment clip sat black and BRANDED's intro missed the 12 second load timeout and showed as a placeholder. The timeout is now 60 seconds (`LOAD_TIMEOUT_MS`); a missing file still fails at once.
+
+A clip counts as ready when the browser says it can play through, or when its file is missing (it shows its placeholder as before). Browsers that stop fetching ahead of play (Safari, data saver) never say so, so a clip that can start and has stopped growing for 4 seconds counts as ready too. The percentage is the average of each clip's buffered share, eased so it never goes back. `loadThenBegin()` in demo.js. Checked in headless Edge throttled to 300ms latency at 1.5MB/s, 400KB/s and 300KB/s (BRANDED, Ferarri): about 20, 32 and 37 seconds, then the run with every clip loaded and no placeholders.
+
 From file:// there is no CMS lookup, so the data files are the only source, and the demo still runs offline. The same goes for any copy served somewhere without a CMS at `cms/` beside it: the lookup gets a 404 and the data files are used. For an offline per-customer package, set `window.TI_CMS = null` in `data/cms.js`.
 
 A CMS sequence plays only if it passes the validator, as the data files' sequences do.
