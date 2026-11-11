@@ -616,9 +616,10 @@
         .worker-line code { font-size: 0.8rem; }
 
         /* The colours and logo in the list */
-        .brand-cell { display: flex; align-items: center; gap: 6px; }
+        /* Wraps the logo under the swatches when the box is narrow, rather than running past it */
+        .brand-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
         .swatch { flex: none; width: 18px; height: 18px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); }
-        .brand-logo { height: 22px; max-width: 70px; padding: 2px 4px; border-radius: 4px; object-fit: contain; }
+        .brand-logo { height: 22px; max-width: min(70px, 100%); padding: 2px 4px; border-radius: 4px; object-fit: contain; }
     </style>
 </head>
 <body>
