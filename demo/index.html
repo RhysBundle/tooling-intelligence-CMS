@@ -85,14 +85,79 @@
         <div class="media" id="return-media" hidden></div>
       </section>
 
-      <!-- Stub: where the next screens will go -->
-      <section class="slide slide-next" id="slide-next" aria-label="Next" hidden>
+      <!-- Last slide: TI's product range on a belt that keeps moving left.
+           Pictures and links are from toolingintelligence.co.uk/products/ (11 Nov);
+           the pictures are bundled, so only the links need a connection.
+           demo.js copies the cards once so the belt loops with no gap. -->
+      <section class="slide slide-next" id="slide-next" aria-label="The Tooling Intelligence range" hidden>
         <img class="logo" src="assets/img/ti-logo.png" alt="Tooling Intelligence, Inventory Management Solutions">
-        <div class="next-panel">
-          <p class="next-eyebrow">Config loaded</p>
+        <div class="range-copy">
+          <h2 class="heading">Explore the Tooling Intelligence range</h2>
+          <p class="range-sub">Industrial vending and point-of-use storage for every part of your operation.</p>
+        </div>
+        <div class="belt" id="belt">
+          <ul class="belt-track" id="belt-track">
+            <li class="card">
+              <div class="card-pic"><img src="assets/img/products/smartdrawer.png" alt=""></div>
+              <h3 class="card-name">SmartDrawer</h3>
+              <p class="card-text">A configurable drawer system that dispenses single or multiple items, with every transaction tracked.</p>
+              <a class="card-link" href="https://www.toolingintelligence.co.uk/products/smartdrawer/" target="_blank" rel="noopener">Find out more<span class="visually-hidden"> about SmartDrawer</span></a>
+            </li>
+            <li class="card">
+              <div class="card-pic"><img src="assets/img/products/supplysystem.png" alt=""></div>
+              <h3 class="card-name">SupplySystem</h3>
+              <p class="card-text">Fully customisable vending, from high-density storage to a compact, efficient unit.</p>
+              <a class="card-link" href="https://www.toolingintelligence.co.uk/products/supplysystem/" target="_blank" rel="noopener">Find out more<span class="visually-hidden"> about SupplySystem</span></a>
+            </li>
+            <li class="card">
+              <div class="card-pic"><img src="assets/img/products/smartbin.png" alt=""></div>
+              <h3 class="card-name">SmartBin</h3>
+              <p class="card-text">A weight-based cabinet for precise control and tracking of bulk products.</p>
+              <a class="card-link" href="https://www.toolingintelligence.co.uk/products/smartbin/" target="_blank" rel="noopener">Find out more<span class="visually-hidden"> about SmartBin</span></a>
+            </li>
+            <li class="card">
+              <div class="card-pic"><img src="assets/img/products/supplyvend.png" alt=""></div>
+              <h3 class="card-name">SupplyVend</h3>
+              <p class="card-text">Asset management lockers for issuing and returning tools and devices securely.</p>
+              <a class="card-link" href="https://www.toolingintelligence.co.uk/products/supplyvend/" target="_blank" rel="noopener">Find out more<span class="visually-hidden"> about SupplyVend</span></a>
+            </li>
+            <li class="card">
+              <div class="card-pic"><img src="assets/img/products/supplybay.png" alt=""></div>
+              <h3 class="card-name">SupplyBay</h3>
+              <p class="card-text">Stores and dispenses any range of consumables, and adapts to the way your business works.</p>
+              <a class="card-link" href="https://www.toolingintelligence.co.uk/products/supplybay/" target="_blank" rel="noopener">Find out more<span class="visually-hidden"> about SupplyBay</span></a>
+            </li>
+            <li class="card">
+              <div class="card-pic"><img src="assets/img/products/supplymobile.png" alt=""></div>
+              <h3 class="card-name">SupplyMobile</h3>
+              <p class="card-text">Track, manage and report on stock from an Android tablet, across one stockroom or many.</p>
+              <a class="card-link" href="https://www.toolingintelligence.co.uk/products/supplymobile/" target="_blank" rel="noopener">Find out more<span class="visually-hidden"> about SupplyMobile</span></a>
+            </li>
+            <li class="card">
+              <div class="card-pic"><img src="assets/img/products/vim.png" alt=""></div>
+              <h3 class="card-name">Virtual Inventory Management</h3>
+              <p class="card-text">Control beyond the vending machine: track up to 10,000 items from anywhere on your network.</p>
+              <a class="card-link" href="https://www.toolingintelligence.co.uk/products/virtual-inventory-management/" target="_blank" rel="noopener">Find out more<span class="visually-hidden"> about Virtual Inventory Management</span></a>
+            </li>
+            <li class="card">
+              <div class="card-pic"><img src="assets/img/products/e-lock.png" alt=""></div>
+              <h3 class="card-name">E-Lock</h3>
+              <p class="card-text">Controlled access and accountability for cabinets, cupboards, drawers and storerooms.</p>
+              <a class="card-link" href="https://www.toolingintelligence.co.uk/products/e-lock/" target="_blank" rel="noopener">Find out more<span class="visually-hidden"> about E-Lock</span></a>
+            </li>
+          </ul>
+        </div>
+        <div class="range-actions">
+          <a class="btn btn-submit btn-small btn-wide" href="https://www.toolingintelligence.co.uk/products/" target="_blank" rel="noopener">View all products</a>
+          <button class="btn btn-small btn-ghost" id="btn-restart" type="button">Start again</button>
+        </div>
+        <!-- For testing: the cog shows what was loaded and where from -->
+        <button class="info-cog" id="info-cog" type="button" aria-label="Demo details" title="Demo details" aria-expanded="false" aria-controls="next-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.500 7.500 0 0 0-1.700-1L15 3.500h-4L10.700 6a7.500 7.500 0 0 0-1.700 1l-2.400-1-2 3.400 2 1.600a7.600 7.600 0 0 0 0 2l-2 1.600 2 3.400 2.400-1a7.500 7.500 0 0 0 1.700 1l.3 2.500h4l.3-2.500a7.500 7.500 0 0 0 1.700-1l2.400 1 2-3.400zM13 15.500a3.500 3.500 0 1 1 0-7 3.500 3.500 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+        </button>
+        <div class="next-panel" id="next-panel" hidden>
           <dl class="next-config" id="next-config"></dl>
-          <p class="next-note" id="next-note">The screens after login are the next part to build.</p>
-          <button class="btn btn-submit btn-small" id="btn-restart" type="button">Start again</button>
+          <p class="next-note" id="next-note"></p>
         </div>
       </section>
 

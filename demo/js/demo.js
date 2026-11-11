@@ -1482,11 +1482,51 @@
       return '<dt>' + escapeHtml(r[0]) + '</dt><dd>' + escapeHtml(r[1]) + '</dd>';
     }).join('');
     document.getElementById('next-note').textContent = note;
+    // The rows are for testing: shut until the cog is clicked
+    showInfo(false);
     showCoach(false);
+    startBelt();
     goTo('slide-next');
     // Reaching the end of what is built counts as complete for now.
     if (window.TIScorm) window.TIScorm.complete();
   }
+
+  /* ---------- Last slide: the product range ----------
+   * The cards in index.html are copied once, so the belt can move left by one
+   * set's width and start again with no gap. The copies are hidden from screen
+   * readers and the keyboard. Each showing starts from the first card.
+   */
+  var BELT_PX_PER_S = 38;        // slow enough to read a card as it passes
+  function startBelt() {
+    var track = document.getElementById('belt-track');
+    if (!track.dataset.looped) {
+      var cards = Array.prototype.slice.call(track.children);
+      cards.forEach(function (card) {
+        var copy = card.cloneNode(true);
+        copy.setAttribute('aria-hidden', 'true');
+        copy.querySelector('a').tabIndex = -1;
+        track.appendChild(copy);
+      });
+      // One set: from the first card to its copy
+      var w = track.children[cards.length].offsetLeft - track.children[0].offsetLeft;
+      track.style.setProperty('--belt-w', w + 'px');
+      track.style.setProperty('--belt-t', (w / BELT_PX_PER_S).toFixed(1) + 's');
+      track.dataset.looped = '1';
+    }
+    track.style.animation = 'none';
+    void track.offsetWidth;
+    track.style.animation = '';
+  }
+
+  // The cog on the last slide opens and shuts the box of what was loaded
+  var infoCog = document.getElementById('info-cog');
+  function showInfo(on) {
+    document.getElementById('next-panel').hidden = !on;
+    infoCog.setAttribute('aria-expanded', on ? 'true' : 'false');
+  }
+  infoCog.addEventListener('click', function () {
+    showInfo(infoCog.getAttribute('aria-expanded') !== 'true');
+  });
 
   /* ---------- Buttons ---------- */
   document.getElementById('btn-start').addEventListener('click', function () {

@@ -13,7 +13,7 @@ Replaces the Storyline file. Open `index.html` in Chrome or Edge, or serve the f
    - Typed logins: the user ID is typed on the on-screen keyboard and Enter is pressed
    - Badge and barcode logins: the physical login clip plays
 7. The customer's sequence from `data/sequences.js`, one device screen per step, with the take or return clip each time an item is taken out or put back (see below). A user ID with no sequence skips this.
-8. Stub screen showing the loaded config, and whether its config and sequence came from the CMS or the demo's data files
+8. The product range (11 Nov): TI's eight products from toolingintelligence.co.uk/products/ as cards on a belt that keeps moving left, each with its picture from the site, a short description and a link to its page, plus View all products and Start again. The cards are in `index.html`, the pictures in `assets/img/products/` (bundled, so only the links need a connection). `startBelt()` in demo.js copies the cards once so the loop has no gap and sets the speed (`BELT_PX_PER_S`). The belt stops under the mouse or keyboard focus. A cog at the bottom left opens a small box with the loaded config and whether its config and sequence came from the CMS or the demo's data files (the old stub).
 
 From 3 to 7, an instruction pop-up and a pause button sit at the bottom right (see Instructions and pause).
 
@@ -42,7 +42,7 @@ https://render.bundletraining.com/live/ serves this demo (the live preview; `/` 
 
 5. The demo also asks for the user's own intro, `custom/<id in lower case>/intro.json` beside the CMS, made by the worker on SAGA (see A user's own intro). None, or any problem with it, just means the usual clip.
 
-Submit shows "Checking..." while it asks. The stub at the end says where the config and the sequence came from, and which intro played.
+Submit shows "Checking..." while it asks. The cog on the last slide says where the config and the sequence came from, and which intro played.
 
 ## Loading bar
 

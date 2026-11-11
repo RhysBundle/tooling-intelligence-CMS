@@ -308,16 +308,79 @@ body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -we
 .coach.is-narrow .coach-tip.is-longer { font-size: 13px; line-height: 17px; }
 .coach.is-narrow .coach-icon { display: none; }
 
-/* ---------- Stub: next ---------- */
+/* ---------- Last slide: the product range ---------- */
 .slide-next { background: radial-gradient(ellipse 60% 70% at 70% 30%, #1d4f86, #0b1a2e 55%, #05080e); }
-.next-panel { position: absolute; left: 60px; top: 150px; width: 640px; }
-.next-eyebrow { margin: 0 0 16px; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--ti-blue); font-weight: 600; }
-.next-config { display: grid; grid-template-columns: 180px 1fr; gap: 10px 20px; margin: 0 0 28px; font-size: 20px; }
-.next-config dt { color: rgba(255,255,255,.65); }
-.next-config dd { margin: 0; }
-.next-note { margin: 0 0 40px; font-size: 18px; color: rgba(255,255,255,.8); }
+.range-copy { position: absolute; left: 60px; top: 44px; width: 860px; }
+.range-copy .heading { margin: 0 0 8px; }
+.range-sub { margin: 0; font-size: 18px; line-height: 28px; color: rgba(255,255,255,.85); }
+
+/* The belt: the cards twice over, moving left by one set's width, so the
+   loop has no gap. --belt-w and --belt-t are set by demo.js from the cards.
+   It stops under the mouse or keyboard focus so a link can be read and clicked,
+   and it runs with reduced motion on too: the movement is the slide. */
+.belt {
+  position: absolute; left: 0; right: 0; top: 160px; height: 420px; overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 70px, #000 calc(100% - 70px), transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 70px, #000 calc(100% - 70px), transparent 100%);
+}
+.belt-track {
+  display: flex; gap: 24px; width: max-content; margin: 0; padding: 10px 0 0 24px; list-style: none;
+  animation: belt var(--belt-t, 60s) linear infinite; animation-play-state: paused;
+}
+.slide-next.is-active .belt-track { animation-play-state: running; }
+.slide-next.is-active .belt:hover .belt-track,
+.slide-next.is-active .belt:focus-within .belt-track { animation-play-state: paused; }
+@keyframes belt { to { transform: translateX(calc(-1 * var(--belt-w, 0px))); } }
+
+.card {
+  position: relative; flex: none; width: 250px; height: 396px;
+  display: flex; flex-direction: column;
+  border-radius: 14px; overflow: hidden;
+  background: rgba(255,255,255,.08); box-shadow: 0 8px 18px rgba(0,0,0,.35);
+  transition: transform .2s ease, background .2s ease;
+}
+.card:hover, .card:focus-within { transform: translateY(-6px); background: rgba(255,255,255,.14); }
+/* The site's pictures are dark cut-outs, so they sit on a light panel */
+.card-pic { flex: none; height: 196px; padding: 14px; background: linear-gradient(180deg, #fff, #dfe7ef); }
+.card-pic img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.card-name { margin: 16px 18px 6px; font-size: 19px; line-height: 24px; font-weight: 700; }
+.card-text { margin: 0 18px; font-size: 14px; line-height: 20px; color: rgba(255,255,255,.85); }
+.card-link {
+  margin: auto 18px 16px; font-size: 15px; font-weight: 700; color: #7cc0ff; text-decoration: none;
+}
+.card-link::after { content: ' \203A'; }
+/* The whole card is the link */
+.card-link::before { content: ''; position: absolute; inset: 0; }
+.card-link:hover { text-decoration: underline; }
+.card-link:focus-visible { outline: none; }
+.card:focus-within { outline: 3px solid #fff; outline-offset: -3px; }
+
+.range-actions { position: absolute; left: 0; right: 0; top: 618px; display: flex; justify-content: center; gap: 20px; }
 .btn-small { position: relative; left: 0; top: auto; transform: none; width: 200px; height: 52px; font-size: 18px; }
 .btn-small:active { transform: translateY(1px); }
+a.btn { display: grid; place-items: center; text-decoration: none; }
+.btn-wide { width: 230px; }
+.btn-ghost { background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 2px rgba(255,255,255,.55); }
+
+/* The cog at the bottom left opens what was loaded and where from, for testing */
+.info-cog {
+  position: absolute; left: 14px; bottom: 12px; z-index: 4;
+  display: grid; place-items: center; width: 34px; height: 34px; padding: 0;
+  border: 0; border-radius: 50%; background: none; color: rgba(255,255,255,.4); cursor: pointer;
+  transition: color .15s ease, background .15s ease;
+}
+.info-cog:hover, .info-cog[aria-expanded="true"] { color: #fff; background: rgba(255,255,255,.12); }
+.info-cog:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.info-cog svg { width: 22px; height: 22px; }
+.next-panel {
+  position: absolute; left: 16px; bottom: 54px; z-index: 4; padding: 10px 14px; border-radius: 8px;
+  background: rgba(0,0,0,.72); font-size: 12px; line-height: 16px;
+}
+.next-panel[hidden] { display: none; }
+.next-config { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; }
+.next-config dt { color: rgba(255,255,255,.65); }
+.next-config dd { margin: 0; }
+.next-note { margin: 6px 0 0; max-width: 360px; color: rgba(255,255,255,.8); }
 
 /* The slide to the product is the content, so it runs even with reduced motion on. */
 @media (prefers-reduced-motion: reduce) { .slide { transition: none; } }
