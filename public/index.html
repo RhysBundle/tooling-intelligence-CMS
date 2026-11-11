@@ -322,6 +322,7 @@
             justify-content: flex-end;
             gap: 10px;
         }
+        .btn-link { text-decoration: none; }
         
         /* API Info Box */
         .api-info {
@@ -958,6 +959,7 @@
                             </div>
                         </div>
                         <div class="config-actions">
+                            <a class="btn btn-small btn-edit btn-link" href="${previewUrl(config.user_id)}" target="_blank" rel="noopener">Live preview</a>
                             <button class="btn btn-small btn-edit" onclick="editConfig('${config.user_id}')">Edit</button>
                             <button class="btn btn-small btn-danger" onclick="deleteConfig('${config.user_id}')">Delete</button>
                         </div>
@@ -1042,9 +1044,23 @@
         function showWorker(info) {
             const line = document.getElementById('worker-line');
             workerOn = !!(info && info.at && Date.now() - new Date(info.at).getTime() < WORKER_STALE_MS);
+            const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
             line.innerHTML = workerOn
                 ? 'Video maker: <b class="is-on">running</b>' + (info.busy ? `, making videos for <b>${esc(info.busy)}</b>` : ', nothing waiting')
-                : 'Video maker: <b class="is-off">not running</b>, so no branded videos are being made. To run it on this computer: <code>npm run videos</code>';
+                : 'Video maker: <b class="is-off">not running</b>, so no branded videos are being made.' +
+                  (local ? ' To run it on this computer: <code>npm run videos</code>' : '');
+        }
+
+        // The demo, live/ next to this CMS's own folder: on
+        // render.bundletraining.com /live/ beside /cms/, on this computer the
+        // CMS serves it (server.js). It looks users up in the CMS its
+        // data/cms.js names, render's; any other CMS (this computer's) is
+        // passed with ?cms= so the preview shows what's saved here.
+        const DEMO_CMS = 'https://render.bundletraining.com/cms/';
+        function previewUrl(userId) {
+            const here = new URL('.', location.href).href;
+            const live = new URL(here.endsWith('/cms/') ? '../live/' : 'live/', here).href;
+            return `${live}?userid=${encodeURIComponent(userId)}` + (here === DEMO_CMS ? '' : `&cms=${encodeURIComponent(here)}`);
         }
 
         async function loadVideoStates() {

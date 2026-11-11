@@ -27,6 +27,11 @@ app.use('/shared', express.static(path.join(__dirname, 'shared')));
 // Configurations list shows custom/<id>/status.json. Not in git.
 const CUSTOM_DIR = process.env.TI_CUSTOM_DIR || path.join(__dirname, 'custom');
 app.use('/custom', express.static(CUSTOM_DIR, { maxAge: 0 }));
+// The demo itself at live/, for the Configurations page's Live preview on
+// this computer (on render.bundletraining.com, /live/ is the built demo
+// beside /cms/, so the same relative link works). Its ../shared/ scripts land
+// on /shared above.
+app.use('/live', express.static(path.join(__dirname, 'demo')));
 
 let db;
 

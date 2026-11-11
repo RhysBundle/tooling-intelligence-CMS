@@ -1182,7 +1182,9 @@
    * from the demo's own configs.js and sequences.js, which are also the only
    * source from file:// and when the CMS can't be reached.
    */
-  var CMS_TIMEOUT_MS = 6000;  // a CMS that hasn't answered by then counts as down
+  // A CMS that hasn't answered by then counts as down. One that's really down
+  // fails at once; this is for slow links (6s was too short from New Zealand).
+  var CMS_TIMEOUT_MS = 15000;
 
   // The CMS's address, ending in a slash, or null for none. ?cms= overrides
   // data/cms.js for testing, and ?cms=off turns it off.

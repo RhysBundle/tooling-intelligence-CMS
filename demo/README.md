@@ -27,13 +27,13 @@ URL options, for testing:
 - `?instructions=off` or `?instructions=on` overrides the config's `allow_instructions` (see Instructions and pause)
 - `?cms=http://localhost:3000/` looks user IDs up in that CMS instead of the one in `data/cms.js`; `?cms=off` uses the data files only
 
-## Hosted on SAGA
+## Hosted on render.bundletraining.com
 
-https://saga.bundletraining.com/demos/tooling-intelligence/ serves this demo, built with `build-scorm.py --html` from the `demo-2.0` branch on GitHub. The server checks GitHub every minute and rebuilds when the branch moves, so a push is live within a minute or two. The CMS runs alongside it at `.../tooling-intelligence/cms/`, and the demo looks user IDs up there, so a user made or changed in that CMS works in the demo straight away, with no push. Setup notes are in the project's CLAUDE.md.
+https://render.bundletraining.com/live/ serves this demo (the live preview; `/` goes there), built with `build-scorm.py --html` from the `demo-2.0` branch on GitHub. It's Bundle's Hetzner server (the one SAGA runs on), in its own containers apart from the LMS. The server checks GitHub every minute and rebuilds when the branch moves, so a push is live within a minute or two. The CMS runs alongside it at https://render.bundletraining.com/cms/, and the demo looks user IDs up there, so a user made or changed in that CMS works in the demo straight away, with no push. The video maker runs there too (see A user's own intro). The old addresses under saga.bundletraining.com/demos/tooling-intelligence/ redirect here (`cms/` to `/cms/`, the rest to `/live/`). Setup notes are in the project's CLAUDE.md.
 
 ## User IDs and the CMS
 
-`data/cms.js` says which CMS to ask: `cms/`, relative to `index.html`, which on SAGA is the CMS next to the demo. On Start, over http(s):
+`data/cms.js` says which CMS to ask: the full address of the CMS on render.bundletraining.com, so any copy of the demo served over http(s) finds it: one uploaded to an LMS, on another site, or on a local test server. (It was `cms/`, relative, until 11 Nov; a copy Jamie opened outside SAGA then couldn't reach it.) The lookup waits up to 15 seconds for a slow link. On Start, over http(s):
 
 1. The demo asks the CMS for the ID's config (`api/config/<id>`). The CMS matches IDs case by case, so on a miss it checks the CMS's full list ignoring case, as the data files do.
 2. If the CMS has the config, the demo asks for its sequence too (`api/sequence/<id>`).
@@ -154,26 +154,18 @@ The demo plays a user's intro in the zoom and login clip's place. It fades strai
 
 In the CMS: the Configurations form has a Branded videos panel that says how it works (save the configuration, build the sequence, the videos are made for you) and, when editing a user, shows that user's state; the list shows each user's state under Branded videos, with a bar while they're made (it looks every 2 seconds while anything waits or is being made), and a line at the top says whether the video maker is running. The sequence builder has a line under Save saying the same. The demo asks the CMS for `intro.json` and `clips.json` with the config and prefers them to its own files; the stub's Intro and Take and return rows say which it used.
 
-It runs in its own container on SAGA (`tools/screen-swap/Dockerfile`: Node 22, Chromium, Python with numpy and OpenCV from Debian, ffmpeg) with the repo, the renders and `custom/` mounted. On this computer: start the CMS (`npm start`), then `npm run videos` from the repo (it makes every user in the local CMS; add `-- --only ID1,ID2` to limit it), and open the demo over http with `?cms=http://localhost:3000/`. About 3 minutes per video on Rhys's PC, so 10 minutes or so for a user with one take and one return.
+Each user in the Configurations list has a Live preview button: the demo at `/live/?userid=<id>`, beside the CMS, so it shows exactly what's saved there, branded videos included once they're ready. On this computer the CMS serves the demo itself at `live/` (server.js) and the link adds `?cms=` for the local CMS.
 
-Setting it up on SAGA (not done yet; needs Jamie's sign-off, as it runs video making on the server the Bundle LMS shares):
+It runs in its own container, `ti-render`, on the render.bundletraining.com server (`tools/screen-swap/Dockerfile`: Node 22, Chromium, Python with numpy and OpenCV from Debian, ffmpeg) with the repo, the renders and `custom/` mounted. On this computer: start the CMS (`npm start`), then `npm run videos` from the repo (it makes every user in the local CMS; add `-- --only ID1,ID2` to limit it), and open the demo over http with `?cms=http://localhost:3000/`. About 3 minutes per video on Rhys's PC, so 10 minutes or so for a user with one take and one return.
 
-1. Copy the renders the tools read to `/opt/ti-demo/renders/<product>/`: per location `_pushin`, `_pushin_screen`, `_login_rfid`, `_login_barcode`, `_login_typed`, `_zoom`, `_take`, `_return`; per product the logins, zoom, take and return on a plain background and their screen passes (SmartDrawer's `login_*_screen`, `take_alpha`, `return_alpha`, `take_screen`, `return_screen`; SupplySystem's `login_typed_hand_matte`, `take`, `return`, `take_screen`, `return_screen`). About 20GB as ProRes.
-2. Add to `/opt/ti-demo/docker-compose.yml`, and give `cms` the same folder read-only with `TI_CUSTOM_DIR: /custom`:
+On the server (set up 11 Nov), in `/opt/ti-demo`:
 
-   ```yaml
-   intro:
-     build: ./repo/demo/tools/screen-swap
-     container_name: ti-intro
-     restart: unless-stopped
-     volumes: [./repo:/app:ro, ./renders:/renders:ro, ./custom:/custom]
-     networks: [lrsnet]
-     cpus: 4        # leaves SAGA's own services room
-   ```
+- `renders/<product>/`: the 105 renders a build reads (18GB as ProRes), most of them as H.264 copies made by `tools/screen-swap/compress_renders.py --replace`: same chroma and bit depth as the ProRes, CRF 10, about a fifth of the size, and as the tools decode them (8-bit) within a level of the ProRes (47.8 dB PSNR on rail_depot_take, 50 dB on a zoom). The alpha passes and hand mattes stay ProRes: a lossless copy saved only 6% and the mattes must stay exact. `render_path()` in intro.py takes `<name>.mp4` where there's no `<name>.mov`. The masters stay as ProRes in `New-vids/renders` on Rhys's PC. The renders are, per location `_pushin`, `_pushin_screen`, `_login_rfid`, `_login_barcode`, `_login_typed`, `_zoom`, `_take`, `_return`; per product the screen passes (SmartDrawer's `login_*_screen`, `login_typed_hand`; SupplySystem's `login_typed_hand_matte`; both products' `take_screen`, `return_screen`). The plain-background renders (`*_alpha`, SupplySystem's `take`, `return`) are only for tracking, which is done here and kept in `tracks/`, so they aren't there. Copy new or changed renders up with the same names.
+- `custom/`: the videos, written by `ti-render`, served read-only by `ti-cms` (`TI_CUSTOM_DIR: /custom`) at `/cms/custom/`.
+- `docker-compose.yml` runs `ti-render` (built from the Dockerfile here, the code mounted from the clone), limited to 6 of the 8 cores so the LMS keeps some.
+- `update.sh` restarts `ti-render` when this folder, `demo/js`, `demo/css`, the fonts or `shared/` change, and rebuilds it when the Dockerfile changes. A video being made when it restarts starts again.
 
-3. In `update.sh`, restart `ti-intro` when `demo/tools/screen-swap/` changes, as it restarts `ti-cms` for the CMS's code.
-
-Every user in the SAGA CMS then gets their videos over the first couple of hours (about 10 minutes each), test1 included.
+Logs: `docker logs -f ti-render`. Every user in the CMS gets their videos over the first few hours after it starts (about 10 minutes each), test1 included.
 
 Not covered: the take and return clips are still the phase 1 renders with SupplyPro's logo, except a user's own from Emil's TakeOut and PutBack (`action.py`, see Take and return clips; BRANDED, Ferarri and TI_EXAMPLE_3 so far); the other cabinet's screen in the push in is lit grey, not Emil's flat grey, so it stays grey.
 

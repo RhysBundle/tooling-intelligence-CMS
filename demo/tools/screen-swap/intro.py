@@ -113,8 +113,13 @@ def frames(path, fmt='bgr24', count=None):
 
 
 def render_path(product, name):
+    """A render by its .mov name, or its H.264 copy of the same name as .mp4
+    where that's all there is (compress_renders.py; the server keeps those to
+    save space). The .mov wins where both are there."""
     p = RENDERS / product / name
     if not p.exists():
+        if p.with_suffix('.mp4').exists():
+            return p.with_suffix('.mp4')
         sys.exit(f'render not found: {p}')
     return p
 
