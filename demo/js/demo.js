@@ -27,6 +27,7 @@
   // bar waits for every clip first and a slow link (SAGA from New Zealand)
   // can take well over 12s; a missing file fails at once with an error.
   var LOAD_TIMEOUT_MS = 60000;
+  var BOOT_MAX_MS = 20000;       // the loading screen goes by then, video or not
   var FADE_MS = 450;             // matches .slide transition in demo.css
   // The hand-off from the environment to the zoom. Keep in step with demo.css.
   var SWAP_MS = 200;             // video's last frame crossfades to the slide image
@@ -1562,6 +1563,29 @@
   loopFor['slide-title'] = slots.title = createSlot(document.querySelector('[data-slot="title_bg"]'), MEDIA.title_bg, 'title_bg');
   loopFor['slide-userid'] = slots.userid = createSlot(document.querySelector('[data-slot="userid_bg"]'), MEDIA.userid_bg, 'userid_bg');
   startLoop(slots.title);
+  bootLoader(slots.title);
+
+  /* The loading screen in index.html stays up until the title's video can
+   * play through, so a slow link shows TI's loading screen and not a still
+   * title. It also goes if the video is missing or fails, and after
+   * BOOT_MAX_MS whatever happens, so nobody is left on it: the title's still
+   * shows then and the video starts when it arrives.
+   */
+  function bootLoader(slot) {
+    var boot = document.getElementById('boot');
+    var done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      boot.classList.add('is-done');
+      setTimeout(function () { boot.hidden = true; }, 550); // after its fade in demo.css
+    }
+    if (!slot.video) { finish(); return; }
+    if (slot.video.readyState >= 4) { finish(); return; }
+    slot.video.addEventListener('canplaythrough', finish);
+    whenKnown(slot, function () { if (slot.missing) finish(); });
+    setTimeout(finish, BOOT_MAX_MS);
+  }
 
   // ?userid=TI pre-fills the ID, for testing
   var pre = PARAMS.get('userid');

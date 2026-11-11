@@ -4,6 +4,7 @@ Replaces the Storyline file. Open `index.html` in Chrome or Edge, or serve the f
 
 ## Flow so far
 
+0. Loading screen (11 Nov): TI's logo and a moving bar on the demo's dark blue, up from the first paint until the title's video can play through, so a slow link shows it and not a still title. It also goes if the video is missing, and after 20 seconds whatever happens (`BOOT_MAX_MS`); the title's still shows then and the video starts when it arrives. `#boot` in `index.html`, `bootLoader()` in demo.js. The bar has no percentage: a browser doesn't say how much of a video it needs.
 1. Title screen, Start button
 2. User ID screen. Looks the ID up in the CMS when the demo is served over http(s), then in `data/configs.js`, ignoring case (see User IDs and the CMS).
 3. Environment clip for the customer's `location`, ending on the two products

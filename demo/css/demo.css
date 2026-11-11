@@ -37,6 +37,33 @@ body { font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; color: #fff; -we
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* ---------- Loading screen ----------
+   Over everything until the title's video can play, then fades (demo.js
+   bootLoader). The bar has no percentage: a browser doesn't say how much of
+   a video it needs before it can play through. */
+.boot {
+  position: absolute; inset: 0; z-index: 30;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background:
+    radial-gradient(ellipse 60% 70% at 50% 40%, #1d4f86, #0b1a2e 60%, #05080e);
+  transition: opacity .5s ease;
+}
+.boot.is-done { opacity: 0; pointer-events: none; }
+.boot[hidden] { display: none; }
+.boot-logo { width: 380px; height: auto; animation: boot-in .6s ease both; }
+.boot-bar {
+  position: relative; width: 320px; height: 6px; margin-top: 44px; border-radius: 3px; overflow: hidden;
+  background: rgba(255,255,255,.14);
+}
+.boot-bar::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--submit-a), var(--submit-b));
+  animation: boot-run 1.4s ease-in-out infinite;
+}
+.boot-text { margin: 18px 0 0; font-size: 16px; color: rgba(255,255,255,.75); }
+@keyframes boot-run { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@keyframes boot-in { from { opacity: 0; transform: translateY(8px); } }
+
 /* ---------- Media slots ---------- */
 .media { position: absolute; inset: 0; overflow: hidden; }
 .media video, .media img.poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }

@@ -11,6 +11,15 @@
   <div class="viewport">
     <main class="stage" id="stage" aria-live="polite">
 
+      <!-- Loading screen: up from the first paint until the title's video can
+           play (bootLoader in demo.js), so a slow link shows this and not a
+           still title. Plain HTML and CSS, so it needs nothing but the logo. -->
+      <div class="boot" id="boot" role="status" aria-label="Loading">
+        <img class="boot-logo" src="assets/img/ti-logo.png" alt="Tooling Intelligence, Inventory Management Solutions">
+        <div class="boot-bar"></div>
+        <p class="boot-text">Loading your product experience</p>
+      </div>
+
       <!-- Slide 1: title -->
       <section class="slide slide-title is-active" id="slide-title" aria-label="Title">
         <div class="media" data-slot="title_bg"></div>
